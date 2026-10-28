@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1140" height="530" viewBox="0 0 1140 530">
+<rect x="0" y="0" width="1140" height="530" rx="0" fill="#FFFFFF" stroke="#FFFFFF"/>
+<rect x="35" y="45" width="245" height="85" rx="12" fill="#F4F7F9" stroke="#D8E2E6"/>
+<text x="53" y="75" font-family="Arial, sans-serif" font-size="20" fill="#183344" font-weight="700">Task context</text>
+<text x="53" y="103" font-family="Arial, sans-serif" font-size="17" fill="#183344">Observations + history</text>
+<rect x="385" y="45" width="310" height="85" rx="12" fill="#EAF5F3" stroke="#9FC9C5"/>
+<text x="405" y="77" font-family="Arial, sans-serif" font-size="24" fill="#217C80" font-weight="700">Astra</text>
+<text x="405" y="105" font-family="Arial, sans-serif" font-size="18" fill="#183344">Plan, review, intervene</text>
+<polyline points="280,88 385,88" fill="none" stroke="#217C80" stroke-width="2"/>
+<polygon points="385,88 376.0,84.0 376.0,92.0" fill="#217C80"/>
+<rect x="35" y="210" width="1050" height="185" rx="12" fill="#F6FAFC" stroke="#D8E2E6"/>
+<rect x="75" y="250" width="225" height="75" rx="12" fill="#FFFFFF" stroke="#BDCDDE"/>
+<text x="95" y="280" font-family="Arial, sans-serif" font-size="22" fill="#183344" font-weight="700">VLA</text>
+<text x="95" y="307" font-family="Arial, sans-serif" font-size="17" fill="#183344">Predict action chunks</text>
+<rect x="430" y="250" width="255" height="75" rx="12" fill="#FFFFFF" stroke="#9FC9C5"/>
+<text x="450" y="280" font-family="Arial, sans-serif" font-size="22" fill="#183344" font-weight="700">Execution</text>
+<text x="450" y="307" font-family="Arial, sans-serif" font-size="17" fill="#183344">Budget + monitors</text>
+<rect x="840" y="250" width="220" height="75" rx="12" fill="#FFFFFF" stroke="#BDCDDE"/>
+<text x="860" y="292" font-family="Arial, sans-serif" font-size="22" fill="#183344" font-weight="700">Environment</text>
+<polyline points="430,130 430,175 187,175 187,250" fill="none" stroke="#217C80" stroke-width="2"/>
+<polygon points="187,250 191.0,241.0 183.0,241.0" fill="#217C80"/>
+<text x="75" y="198" font-family="Arial, sans-serif" font-size="17" fill="#217C80" font-weight="700">Subgoal</text>
+<polyline points="555,130 555,250" fill="none" stroke="#217C80" stroke-width="2" stroke-dasharray="6 5"/>
+<polygon points="555,250 559.0,241.0 551.0,241.0" fill="#217C80"/>
+<text x="566" y="195" font-family="Arial, sans-serif" font-size="16" fill="#217C80">Steps + monitors</text>
+<polyline points="695,105 750,105 750,225 650,225 650,250" fill="none" stroke="#A96727" stroke-width="2"/>
+<polygon points="650,250 654.0,241.0 646.0,241.0" fill="#A96727"/>
+<text x="825" y="113" font-family="Arial, sans-serif" font-size="18" fill="#A96727" font-weight="700">Direct intervention</text>
+<text x="825" y="139" font-family="Arial, sans-serif" font-size="16" fill="#A96727">Bypasses VLA</text>
+<polyline points="300,288 430,288" fill="none" stroke="#217C80" stroke-width="2"/>
+<polygon points="430,288 421.0,284.0 421.0,292.0" fill="#217C80"/>
+<text x="323" y="275" font-family="Arial, sans-serif" font-size="16" fill="#217C80">Actions</text>
+<polyline points="685,288 840,288" fill="none" stroke="#217C80" stroke-width="2"/>
+<polygon points="840,288 831.0,284.0 831.0,292.0" fill="#217C80"/>
+<text x="720" y="275" font-family="Arial, sans-serif" font-size="16" fill="#217C80">Controls</text>
+<polyline points="950,325 950,365 187,365 187,325" fill="none" stroke="#217C80" stroke-width="2"/>
+<polygon points="187,325 183.0,334.0 191.0,334.0" fill="#217C80"/>
+<text x="405" y="386" font-family="Arial, sans-serif" font-size="17" fill="#217C80">New observations</text>
+<polyline points="685,258 805,258 805,20 540,20 540,45" fill="none" stroke="#526873" stroke-width="2"/>
+<polygon points="540,45 544.0,36.0 536.0,36.0" fill="#526873"/>
+<text x="825" y="37" font-family="Arial, sans-serif" font-size="16" fill="#526873" font-weight="700">Review when</text>
+<text x="825" y="60" font-family="Arial, sans-serif" font-size="16" fill="#526873">budget ends or monitor triggers</text>
+<rect x="80" y="445" width="250" height="65" rx="12" fill="#FBF5EB" stroke="#DFC8A6"/>
+<text x="100" y="473" font-family="Arial, sans-serif" font-size="20" fill="#A96727" font-weight="700">Revised experience</text>
+<text x="100" y="496" font-family="Arial, sans-serif" font-size="16" fill="#183344">Guides later decisions</text>
+<rect x="810" y="445" width="275" height="65" rx="12" fill="#FBF5EB" stroke="#DFC8A6"/>
+<text x="830" y="474" font-family="Arial, sans-serif" font-size="20" fill="#A96727" font-weight="700">Post-episode review</text>
+<text x="830" y="497" font-family="Arial, sans-serif" font-size="16" fill="#183344">Astra reflects on execution</text>
+<polyline points="810,477 330,477" fill="none" stroke="#A96727" stroke-width="2"/>
+<polygon points="330,477 339.0,481.0 339.0,473.0" fill="#A96727"/>
+<text x="475" y="463" font-family="Arial, sans-serif" font-size="17" fill="#A96727">Add or revise advice</text>
+<polyline points="1060,307 1115,307 1115,425 945,425 945,445" fill="none" stroke="#A96727" stroke-width="2" stroke-dasharray="6 5"/>
+<polygon points="945,445 949.0,436.0 941.0,436.0" fill="#A96727"/>
+<polyline points="80,477 15,477 15,150 355,150 355,115 385,115" fill="none" stroke="#A96727" stroke-width="2" stroke-dasharray="6 5"/>
+<polygon points="385,115 376.0,111.0 376.0,119.0" fill="#A96727"/>
+</svg>

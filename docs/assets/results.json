@@ -1,0 +1,129 @@
+{
+  "tasks": [
+    "BinFill",
+    "PickXtimes",
+    "SwingXtimes",
+    "StopCube",
+    "VideoUnmask",
+    "ButtonUnmask",
+    "VideoUnmaskSwap",
+    "ButtonUnmaskSwap",
+    "PickHighlight",
+    "VideoRepick",
+    "VideoPlaceButton",
+    "VideoPlaceOrder",
+    "MoveCube",
+    "InsertPeg",
+    "PatternLock",
+    "RouteStick"
+  ],
+  "series": {
+    "Human": [
+      96,
+      100,
+      80,
+      78,
+      90,
+      92,
+      92,
+      90,
+      92,
+      92,
+      98,
+      90,
+      90,
+      98,
+      84,
+      86
+    ],
+    "GroundSG+Oracle": [
+      85.78,
+      100,
+      100,
+      49.67,
+      98.78,
+      95,
+      99.22,
+      80.22,
+      83.33,
+      97.33,
+      100,
+      100,
+      87.78,
+      15.56,
+      97,
+      55.56
+    ],
+    "Astra (direct)": [
+      98,
+      100,
+      98,
+      54,
+      94,
+      100,
+      96,
+      98,
+      98,
+      100,
+      100,
+      98,
+      54,
+      92,
+      100,
+      94
+    ],
+    "Our harness": [
+      96.0,
+      100.0,
+      96.0,
+      96.0,
+      100.0,
+      100.0,
+      98.0,
+      92.0,
+      100.0,
+      100.0,
+      98.0,
+      90.0,
+      100.0,
+      90.0,
+      100.0,
+      98.0
+    ]
+  },
+  "sources": {
+    "Human": "https://arxiv.org/html/2610.17350v1#S4.T2",
+    "GroundSG+Oracle": "https://arxiv.org/html/2603.04639v1",
+    "Astra (direct)": "https://arxiv.org/html/2610.17350v1#S4.T2",
+    "Our harness": "report/#app:task-results"
+  },
+  "notes": "Our harness: 50 episodes per task, 777/800 successes. Published references retain their reported protocols. Only our polygon is filled.",
+  "styles": {
+    "Human": {
+      "color": "#59616B",
+      "dash": [
+        7,
+        5
+      ]
+    },
+    "GroundSG+Oracle": {
+      "color": "#B07A28",
+      "dash": [
+        9,
+        4,
+        2,
+        4
+      ]
+    },
+    "Astra (direct)": {
+      "color": "#B22D4D",
+      "dash": []
+    },
+    "Our harness": {
+      "color": "#2878C8",
+      "dash": [],
+      "marker": "circle",
+      "fill_opacity": 0.12
+    }
+  }
+}

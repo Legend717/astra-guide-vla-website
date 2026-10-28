@@ -1,0 +1,10 @@
+* text=auto
+*.sh text eol=lf
+*.py text eol=lf
+*.json text eol=lf
+
+website/report-source/** -text -whitespace
+*.pdf binary
+*.png binary
+*.jpg binary
+*.mp4 binary

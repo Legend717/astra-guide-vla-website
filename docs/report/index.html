@@ -1,0 +1,1724 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="The complete technical report: experience-guided Astra supervision of a fixed VLA on RoboMME."><title>Can Astra Guide a VLA to Solve RoboMME? — Technical Report</title><link rel="icon" href="../assets/favicon.svg"><link rel="stylesheet" href="../assets/site.css"><script src="../assets/site.js" defer></script></head>
+<body class="report-page"><a class="skip-link" href="#report-content">Skip to report</a>
+<header class="site-header"><a class="wordmark" href="../">Astra<span>–</span>VLA <span class="wordmark-light">Harness</span></a><nav aria-label="Main"><a href="../#mechanism">Method</a><a href="../#demos">Demos</a><a href="../#results">Results</a><a class="nav-current" href="./" aria-current="page">Report</a></nav></header>
+<div class="report-layout"><aside class="report-sidebar"><details open><summary>Contents</summary><nav aria-label="Report contents"><a class="toc-level-2" href="#abstract"> Abstract</a><a class="toc-level-2" href="#sec:introduction">1 Introduction</a><a class="toc-level-2" href="#sec:related">2 Related work</a><a class="toc-level-2" href="#sec:harness">3 Harness</a><a class="toc-level-3" href="#system-and-task-context">3.1 System and task context</a><a class="toc-level-3" href="#grounded-subgoals">3.2 Grounded subgoals</a><a class="toc-level-3" href="#execution-delegation-and-recovery">3.3 Execution delegation and recovery</a><a class="toc-level-3" href="#cross-episode-experience-evolution">3.4 Cross-episode experience evolution</a><a class="toc-level-2" href="#sec:setup">4 Experimental setup</a><a class="toc-level-2" href="#sec:results">5 Results and analysis</a><a class="toc-level-3" href="#task-performance">5.1 Task performance</a><a class="toc-level-3" href="#supervision-and-execution-efficiency">5.2 Supervision and execution efficiency</a><a class="toc-level-3" href="#execution-and-experience-analysis">5.3 Execution and experience analysis</a><a class="toc-level-3" href="#failure-analysis">5.4 Failure analysis</a><a class="toc-level-2" href="#discussion-and-limitations">6 Discussion and limitations</a><a class="toc-level-2" href="#conclusion">7 Conclusion</a><a href="#references">References</a><a class="toc-level-2" href="#app:configuration">A Experimental settings</a><a class="toc-level-2" href="#app:task-results">B Per-task performance and execution allocation</a><a class="toc-level-2" href="#app:interfaces">C Interface and experience details</a><a class="toc-level-2" href="#app:measurements">D Measurement definitions</a><a class="toc-level-2" href="#app:completion-time">E Successful-episode execution time</a><a class="toc-level-2" href="#monitor-selection-and-resource-use">F Monitor selection and resource use</a><a class="toc-level-2" href="#app:case-sequences">G Within-episode case sequences</a><a class="toc-level-2" href="#app:failure-analysis">H Failure annotation and reference-frame clarification</a><a class="toc-level-2" href="#app:paired">I Review-policy comparison</a></nav></details><a class="pdf-link" href="../assets/technical-report.pdf">Download PDF ↗</a></aside>
+<main id="report-content" class="report-content"><header class="report-title"><p class="eyebrow">Technical report</p><h1>Can Astra Guide a VLA to Solve RoboMME?</h1><p class="report-subtitle">A Self-Evolving Harness for Memory-Dependent Manipulation</p><a href="../assets/technical-report.pdf">Read as PDF ↗</a></header><section class="abstract" id="abstract"><h2>Abstract</h2>
+<p>Robot manipulation often requires information from past observations
+to guide current actions. We present a self-evolving harness that
+combines GPT-6 Astra with the official RoboMME GroundSG
+vision-language-action model (VLA) for memory-dependent manipulation.
+Astra interprets task history and selects subgoals, while the VLA
+handles their execution. To reduce repeated supervision, Astra chooses
+how many control steps the VLA may execute before review and can select
+robot-state monitors that prompt earlier inspection. It also intervenes
+directly when execution requires correction. Starting from
+subtask-duration priors, the harness accumulates and revises experience
+across episodes. This experience informs when Astra can rely on the VLA
+and when closer supervision is needed, while VLA weights remain fixed.
+Across 800 test episodes covering all 16 RoboMME tasks, the system
+achieves 97.1% success, with 54.9% of control steps executed without
+additional Astra review. These results show that high task success can
+coexist with less frequent supervision, supporting experience-guided
+coordination as a practical way to combine VLM reasoning with learned
+robot control.</p>
+</section>
+<div class="publication-panel figure-panel">
+<a class="zoom-image" href="../assets/images/teaser-v3.svg" data-zoom aria-label="Enlarge teaser v3"><img src="../assets/images/teaser-v3.svg" loading="lazy" alt="teaser v3"></a>
+<div class="caption">
+<p><strong>Figure 1.</strong> Experience-guided supervision of a VLA.
+(a) Astra interprets task history, delegates execution with a finite
+budget and selected monitors, and revises experience for later episodes.
+The scene and budget are illustrative; monitor events can prompt earlier
+review. (b,c) Success compared with the published RoboMME human
+skill-selection and GroundSG+Oracle references; Table <a
+href="#tab:performance">1</a> gives broader comparisons. (d) Automatic
+continuation accounts for 54.9% of executed control steps across 800
+episodes.</p>
+</div>
+<span class="reference-anchor" id="fig:teaser"></span>
+</div>
+<h2 id="sec:introduction"><span class="section-number">1</span> Introduction</h2>
+<p>In robotic manipulation, deciding what to do next often requires
+information from past observations. A robot may need to remember which
+container hides a target, count earlier events, or reproduce a
+demonstrated action sequence. RoboMME evaluates these capabilities
+through 16 tasks grouped into counting, permanence, reference, and
+imitation <span class="citation" data-cites="robomme">[<a
+href="#ref-robomme" role="doc-biblioref">6</a>]</span>. Solving them
+requires both interpreting the relevant history and executing actions
+consistent with it.</p>
+<p>Recent RoboMME studies use GPT-6 Astra (hereafter Astra), a
+vision-language reasoning model, in two distinct roles. Direct control
+asks Astra to generate robot motion targets from visual history, placing
+action generation as well as task reasoning in the model and incurring
+repeated inference during execution <span class="citation"
+data-cites="astra-direct">[<a href="#ref-astra-direct"
+role="doc-biblioref">12</a>]</span>. A three-tier system instead uses
+Astra to plan subgoals for a trained vision-language-action model (VLA),
+with a separate learned monitor tracking completion <span
+class="citation" data-cites="astra-three-tier">[<a
+href="#ref-astra-three-tier" role="doc-biblioref">3</a>]</span>. This
+division reduces Astra’s involvement in routine motion, but concentrates
+its role on planning. We seek to retain the efficiency of learned
+control while also using Astra to supervise progress and intervene when
+execution goes wrong.</p>
+<p>Reviewing every short action sequence, or action chunk, incurs
+repeated inference cost even when the VLA is still executing the same
+subgoal. Longer intervals between reviews can delay correction of a
+failed grasp or an incorrect motion. Appropriate supervision therefore
+depends on the current task stage, visual evidence, and the controller’s
+behavior in similar situations. Experience from earlier episodes can
+help guide these decisions, but must be updated when new outcomes reveal
+its limitations.</p>
+<p>We present a self-evolving harness in which Astra learns from
+execution experience how to supervise the official RoboMME GroundSG VLA
+(Figure <a href="#fig:teaser">1</a>). Given task history and current
+observations, Astra selects a subgoal and a finite execution budget.
+When permitting a longer interval, it can activate auxiliary monitors,
+such as gripper-state or directional-motion checks, to trigger review
+before the budget expires. The VLA continues to react to the latest
+observations throughout this interval. At review, Astra decides whether
+to continue execution, revise the subgoal, or intervene directly.
+Post-episode reflection revises advice about these choices,
+progressively informing supervision without changing VLA weights.</p>
+<p>We evaluate the harness on all 16 RoboMME tasks with 50 episodes per
+task. It achieves 97.1% success across 800 episodes, reaches at least
+90% on every task, and executes 54.9% of control steps without
+additional Astra review. Execution and experience traces show how prior
+outcomes lead to revised review intervals and more specific task
+interpretations. Together, these results and traces illustrate how
+experience can guide Astra’s supervision while the VLA carries out
+substantial portions of execution without additional review.</p>
+<h2 id="sec:related"><span class="section-number">2</span> Related work</h2>
+<h3 id="foundation-models-for-robot-control" class="paragraph-heading">Foundation models for robot control.</h3>
+<p>Language and vision-language models connect high-level task reasoning
+to robot execution through affordance-based skill selection, robot API
+programs, and spatial objectives for motion planning <span
+class="citation" data-cites="saycan code-as-policies voxposer">[<a
+href="#ref-voxposer" role="doc-biblioref">9</a>, <a href="#ref-saycan"
+role="doc-biblioref">11</a>, <a href="#ref-code-as-policies"
+role="doc-biblioref">14</a>]</span>. VLAs learn action prediction from
+robot demonstrations and pretrained representations <span
+class="citation" data-cites="rt2 openvla pi05">[<a href="#ref-pi05"
+role="doc-biblioref">1</a>, <a href="#ref-openvla"
+role="doc-biblioref">13</a>, <a href="#ref-rt2"
+role="doc-biblioref">21</a>]</span>, while RoboICL and GPT-Policy
+explore general-purpose VLM control from demonstrations and feedback
+without deployment-time weight updates <span class="citation"
+data-cites="roboicl gpt-policy">[<a href="#ref-gpt-policy"
+role="doc-biblioref">4</a>, <a href="#ref-roboicl"
+role="doc-biblioref">15</a>]</span>. The direct Astra policy generates
+Cartesian waypoints using sampled episode history on RoboMME <span
+class="citation" data-cites="astra-direct">[<a href="#ref-astra-direct"
+role="doc-biblioref">12</a>]</span>. In our system, a trained VLA
+handles routine execution, while Astra can directly intervene when
+needed.</p>
+<h3 id="hierarchical-execution-and-feedback" class="paragraph-heading">Hierarchical execution and feedback.</h3>
+<p>Inner Monologue incorporates environmental feedback into
+language-based planning <span class="citation"
+data-cites="inner-monologue">[<a href="#ref-inner-monologue"
+role="doc-biblioref">10</a>]</span>. PonderPounce uses a multimodal
+model to maintain episode context and guide a fast VLA, while
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>τ</mi><mn>0</mn></msub><annotation encoding="application/x-tex">\tau_0</annotation></semantics></math>-VLA
+combines execution memory with world-model-guided subtask selection
+<span class="citation" data-cites="ponderpounce tau0-vla">[<a
+href="#ref-tau0-vla" role="doc-biblioref">2</a>, <a
+href="#ref-ponderpounce" role="doc-biblioref">5</a>]</span>. The
+three-tier Astra system uses a fine-tuned Qwen3-VL-4B monitor to detect
+subtask completion and trigger the next Astra planning call, while a
+fine-tuned
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>π</mi><mn>0.5</mn></msub><annotation encoding="application/x-tex">\pi_{0.5}</annotation></semantics></math> executes
+the subtasks <span class="citation" data-cites="astra-three-tier">[<a
+href="#ref-astra-three-tier" role="doc-biblioref">3</a>]</span>. In
+contrast, our harness allows Astra to schedule execution reviews and
+configure auxiliary monitors that can trigger earlier inspection. Beyond
+subtask completion, Astra can assess execution errors and intervene
+directly when recovery is needed.</p>
+<h3 id="task-memory-and-experience-reuse" class="paragraph-heading">Task memory and experience reuse.</h3>
+<p>RoboMME evaluates manipulation that depends on past observations
+<span class="citation" data-cites="robomme">[<a href="#ref-robomme"
+role="doc-biblioref">6</a>]</span>. Relevant memory mechanisms include
+SAM2Act+’s visual memory bank, MEM’s short-horizon video and
+long-horizon text, SimpleMemVLA’s sampled video context, and MemER’s
+retrieval of task-relevant historical keyframes <span class="citation"
+data-cites="sam2act mem simplememvla memer">[<a href="#ref-sam2act"
+role="doc-biblioref">7</a>, <a href="#ref-memer"
+role="doc-biblioref">17</a>, <a href="#ref-mem"
+role="doc-biblioref">18</a>, <a href="#ref-simplememvla"
+role="doc-biblioref">20</a>]</span>. Our harness uses archived images
+and episode notes to maintain task context within an episode, while
+separately accumulating experience to guide decisions in future
+episodes.</p>
+<p>Beyond within-episode memory, Reflexion uses textual feedback to
+improve subsequent attempts, Voyager accumulates reusable skills through
+interaction, and ME-Brain-1.0 consolidates embodied experience for
+future decisions <span class="citation"
+data-cites="reflexion voyager mebrain">[<a href="#ref-mebrain"
+role="doc-biblioref">8</a>, <a href="#ref-reflexion"
+role="doc-biblioref">16</a>, <a href="#ref-voyager"
+role="doc-biblioref">19</a>]</span>. Our persistent store contains
+conditional execution advice that Astra can revise after an episode.
+This experience guides subgoal planning, review timing, and recovery
+decisions, with recommendations tied to their supporting evidence and
+applicable conditions.</p>
+<h2 id="sec:harness"><span class="section-number">3</span> Harness</h2>
+<h3 id="system-and-task-context"><span class="section-number">3.1</span> System and task context</h3>
+<p>The harness connects Astra’s task decisions to VLA execution and
+direct intervention (Figure <a href="#fig:architecture">2</a>). At each
+decision point, Astra receives the task instruction, current front and
+wrist RGB images, robot state, and a summary of the next action sequence
+predicted by the VLA. It can query archived observations and consult
+episode notes. Relevant global and task experience remains available
+throughout the episode. Forward kinematics is used to estimate the
+end-effector motion implied by the VLA’s predicted joint actions.
+Episode success is determined by official environment feedback.</p>
+<div class="publication-panel figure-panel">
+<a class="zoom-image" href="../assets/images/architecture.svg" data-zoom aria-label="Enlarge architecture"><img src="../assets/images/architecture.svg" loading="lazy" alt="architecture"></a>
+<div class="caption">
+<p><strong>Figure 2.</strong> Astra sets execution budgets and selects
+monitors while the VLA reacts to new observations. Direct interventions
+bypass the VLA; post-episode review revises advice for later
+decisions.</p>
+</div>
+<span class="reference-anchor" id="fig:architecture"></span>
+</div>
+<p>The VLA uses the official RoboMME GroundSG checkpoint and maps its
+current observation and grounded subgoal to a joint-action sequence.
+Astra can permit one action chunk, let the VLA execute several chunks
+before review, or directly specify end-effector targets in world
+coordinates and gripper commands. Direct intervention bypasses the VLA
+but acts on the same robot and episode. After a subgoal change or direct
+intervention, the VLA predicts a new action sequence from the latest
+observation and current subgoal before execution resumes.</p>
+<p>History queries recover evidence absent from the current views,
+including reset demonstrations and intermediate observations. Astra
+first samples a requested interval, including its endpoints, then
+narrows the interval or inspects original frames when necessary. Episode
+notes retain task-relevant interpretations and unresolved hypotheses
+with frame references, allowing Astra to revisit their supporting
+observations when needed. The agent uses task instructions, front and
+wrist images, and robot state available under standard RoboMME
+evaluation. It receives no privileged environment information such as
+ground-truth object states or oracle subgoals.</p>
+<h3 id="grounded-subgoals"><span class="section-number">3.2</span> Grounded subgoals</h3>
+<p>A grounded subgoal combines a RoboMME task template, semantic
+attributes, and target image points <span class="citation"
+data-cites="robomme">[<a href="#ref-robomme"
+role="doc-biblioref">6</a>]</span>. Astra resolves the attributes from
+history and the current scene; the harness converts normalized points to
+front-image pixel coordinates and inserts them into the instruction. For
+example, an InsertPeg grasp specifies the near or far end of the peg and
+its image location:</p>
+<blockquote>
+<p>pick up the peg by grasping the near end at &lt;128, 64&gt;</p>
+</blockquote>
+<p>The coordinates here are illustrative image references. Insertion
+additionally specifies the left or right side of the box. The VLA
+receives this grounded instruction with the task instruction, current
+images, and robot state, matching the representation used in its RoboMME
+training annotations. Applicable experience can advise target selection
+or recovery, while Astra judges whether its conditions fit the scene.
+Experience can therefore influence which subgoal is selected without
+changing the task requirements or the controller’s instruction
+vocabulary. Appendix <a href="#app:interfaces">C</a> gives conversion
+and validation details.</p>
+<h3 id="execution-delegation-and-recovery"><span class="section-number">3.3</span> Execution delegation and recovery</h3>
+<p>To avoid unnecessary reviews during routine execution, Astra assigns
+a finite execution budget based on current observations, task history,
+and relevant experience. Initial budget advice comes from the number of
+control steps used to complete subtasks in training demonstrations; the
+lower quartile of each subtask’s duration distribution provides a
+starting point. Subsequent experience refines these recommendations for
+particular stages and observed execution difficulties.</p>
+<p>Longer execution intervals can be paired with auxiliary monitoring
+tools. Gripper-state changes, directional displacement beyond a
+specified threshold, or a lack of end-effector movement can indicate a
+stage transition or potential execution problem. Astra selects the
+relevant monitors when assigning a budget. A detected condition prompts
+visual review, allowing Astra to inspect progress before the full
+interval ends. These tools let Astra retain longer budgets during
+routine motion while watching for events that may require attention.
+Thresholds and implementation details appear in Appendix <a
+href="#app:configuration">A</a>.</p>
+<p>The budget counts actual executed control steps. At chunk
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>j</mi><annotation encoding="application/x-tex">j</annotation></semantics></math>,
+let
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>b</mi><mi>j</mi></msub><annotation encoding="application/x-tex">b_j</annotation></semantics></math>
+be the remaining budget and
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>h</mi><mi>j</mi></msub><annotation encoding="application/x-tex">h_j</annotation></semantics></math>
+the number of predicted actions available for execution. Execution
+uses</p>
+<div class="equation">
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mo>ℓ</mo><mi>j</mi></msub><mo>=</mo><mo>min</mo><mrow><mo stretchy="true" form="prefix">(</mo><mn>16</mn><mo>,</mo><msub><mi>h</mi><mi>j</mi></msub><mo>,</mo><msub><mi>b</mi><mi>j</mi></msub><mo stretchy="true" form="postfix">)</mo></mrow><mo>,</mo><mspace width="2.0em"></mspace><msub><mi>b</mi><mrow><mi>j</mi><mo>+</mo><mn>1</mn></mrow></msub><mo>=</mo><msub><mi>b</mi><mi>j</mi></msub><mo>−</mo><msub><mi>u</mi><mi>j</mi></msub><mo>,</mo><mi>A</mi><mi>S</mi><mi>T</mi><mi>R</mi><mi>A</mi><mi>H</mi><mi>T</mi><mi>M</mi><mi>L</mi><mi>T</mi><mi>O</mi><mi>K</mi><mi>E</mi><mi>N</mi><mn>00055</mn><mi>E</mi><mi>N</mi><mi>D</mi></mrow><annotation encoding="application/x-tex">\ell_j=\min(16,h_j,b_j),\qquad b_{j+1}=b_j-u_j,
+
+
+<span class="reference-anchor" id="eq:budget"></span></annotation></semantics></math></p>
+<span class="equation-number">(1)</span></div>
+<p>where
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mo>ℓ</mo><mi>j</mi></msub><annotation encoding="application/x-tex">\ell_j</annotation></semantics></math>
+is the number of actions released for execution and
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>u</mi><mi>j</mi></msub><mo>≤</mo><msub><mo>ℓ</mo><mi>j</mi></msub></mrow><annotation encoding="application/x-tex">u_j\leq\ell_j</annotation></semantics></math>
+is the number actually executed, which may be smaller if execution stops
+early. After executing these steps, the VLA predicts the next action
+chunk from the latest observations. Thus the controller continues to
+respond to the scene while Astra reviews at the selected interval or
+when a monitor triggers.</p>
+<p>At a nonterminal review with a valid execution state, Astra compares
+the new observations with the intended subgoal and relevant history. It
+can extend execution, choose another subgoal, permit one chunk at a time
+for close supervision, or intervene directly. For example, an incorrect
+target may call for another history query and a revised subgoal, whereas
+a stalled contact motion may call for a local end-effector correction.
+After intervention, the VLA receives the resulting observation and
+resumes control under Astra’s next decision. Budgeted execution and
+event-triggered review therefore support both sustained VLA operation
+and targeted recovery.</p>
+<h3 id="cross-episode-experience-evolution"><span class="section-number">3.4</span> Cross-episode experience evolution</h3>
+<p>The experience store captures what Astra learns about task
+interpretation and VLA execution across episodes. Entries pair an
+observation or recommendation with its applicable conditions and
+supporting frames. Advice can concern target identification, review
+intervals, monitoring choices, or recovery. Revisions replace outdated
+recommendations while preserving their earlier versions. Each episode
+uses the available global and task-specific experience, and new findings
+become available to subsequent episodes.</p>
+<p>After the episode ends, Astra performs the review in the same agent
+session. Its inputs include retained interactions and tool responses,
+episode notes, active experience, and the official outcome and
+termination status. It can query archived front and wrist images, moving
+from sparse sampling to closer inspection. Execution records include the
+selected budgets, the number of steps executed, and the conditions that
+prompted review. Astra uses these records to identify problematic
+stages, assess its earlier supervision and recovery decisions, and
+determine whether the findings should update existing experience.</p>
+<p>Astra adds an entry when review identifies a transferable finding, or
+revises an existing entry when new evidence changes its recommendation
+or applicable conditions. Findings already covered by the store require
+no update. For example, hovering observed before a scheduled review can
+motivate a shorter budget for that phase or the use of a
+stationary-motion monitor. A recommendation that works for one temporal
+query can be revised to distinguish before-event and after-event tasks.
+In this way, experience develops from individual outcomes into
+conditional guidance for later decisions.</p>
+<p>Updates pass structural and scope checks before entering the
+experience store. Later decisions can cite the relevant entries when
+choosing a subgoal, review interval, or recovery action, making it
+possible to trace how past outcomes informed subsequent actions
+(Section <a href="#sec:results">5</a>). Adaptation takes place through
+this evolving context while the VLA weights remain fixed.</p>
+<h2 id="sec:setup"><span class="section-number">4</span> Experimental setup</h2>
+<h3 id="benchmark-and-adaptation" class="paragraph-heading">Benchmark and adaptation.</h3>
+<p>We evaluate the official RoboMME test split: 16 tasks across
+Counting, Permanence, Reference, and Imitation, with 50 episodes per
+task and 800 in total <span class="citation" data-cites="robomme">[<a
+href="#ref-robomme" role="doc-biblioref">6</a>]</span>. Episode seeds
+and difficulty follow the benchmark specification; official environment
+feedback determines success. We use GPT-6 Astra as the supervisor and
+the official RoboMME GroundSG checkpoint, a grounded-subgoal
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>π</mi><mn>0.5</mn></msub><annotation encoding="application/x-tex">\pi_{0.5}</annotation></semantics></math> policy,
+as the VLA. The VLA weights remain fixed. Initial experience consists of
+duration recommendations derived from subtask completion-step statistics
+in training demonstrations. In every task, the first five episodes
+permit experience updates after either outcome; the remaining 45 permit
+updates only after unsuccessful outcomes. All 50 episodes contribute to
+the reported success rate. The experience store remains fixed within
+each episode, and accepted revisions are made available to subsequent
+episodes. Appendix <a href="#app:configuration">A</a> specifies model
+settings, limits, and cross-task sharing.</p>
+<h3 id="observation-access" class="paragraph-heading">Observation access.</h3>
+<p>The harness uses the task instruction, front and wrist RGB images,
+and robot state available to the VLA under standard RoboMME evaluation.
+Historical observations come from the same observation stream. Planning
+and control receive no privileged environment ground truth, such as
+hidden object states or oracle subgoals. Official success and
+termination feedback is used for outcome assessment and post-episode
+review.</p>
+<h3 id="comparisons" class="paragraph-heading">Comparisons.</h3>
+<p>Table <a href="#tab:performance">1</a> groups learned policies,
+direct VLM control, and hierarchical systems, reporting overall success
+<span class="citation"
+data-cites="robomme memer simplememvla astra-direct ponderpounce astra-three-tier">[<a
+href="#ref-astra-three-tier" role="doc-biblioref">3</a>, <a
+href="#ref-ponderpounce" role="doc-biblioref">5</a>, <a
+href="#ref-robomme" role="doc-biblioref">6</a>, <a
+href="#ref-astra-direct" role="doc-biblioref">12</a>, <a
+href="#ref-memer" role="doc-biblioref">17</a>, <a
+href="#ref-simplememvla" role="doc-biblioref">20</a>]</span>. Human
+skill selection and GroundSG+Oracle are separate privileged references.
+PonderPounce-9B uses the reported standard-data leaderboard result, and
+the other reference scores follow the cited benchmark and system
+reports; controller training, history access, intervention interfaces,
+and test-time experience updates differ across systems. We additionally
+compare delegation with per-chunk review on ten StopCube test seeds.
+Both conditions are rerun with the same models, history tools, recovery
+interfaces, and execution limits. Within each pair, both read the same
+saved version of the experience store, and experience updates are
+disabled. Runs are serial, with the order of conditions alternating
+across pairs. This comparison isolates review policy under a fixed
+experience context for each seed.</p>
+<h3 id="measurements" class="paragraph-heading">Measurements.</h3>
+<p>We report task success and the distribution of control steps across
+four execution modes: subgoal entry, Astra intervention, automatic VLA
+continuation, and VLA continuation after review. The last mode is the
+first VLA chunk released after Astra checks progress on the current
+subgoal; subsequent chunks within the same budget count as automatic
+continuation. Completion time includes model inference, history queries,
+action execution, and waiting. Completion-time statistics are reported
+for successful episodes, since failed runs may terminate early or
+continue until the execution limit. Appendix <a
+href="#app:measurements">D</a> gives detailed accounting.</p>
+<h2 id="sec:results"><span class="section-number">5</span> Results and analysis</h2>
+<h3 id="task-performance"><span class="section-number">5.1</span> Task performance</h3>
+<p>The harness succeeds in 777 of 800 episodes (97.1%; Table <a
+href="#tab:performance">1</a>), exceeding the published direct-Astra and
+three-tier Astra scores by 5.0 and 18.0 percentage points, respectively.
+Success reaches 97.0% on Counting, 97.5% on Permanence, and 97.0% on
+both Reference and Imitation. Every task achieves at least 90%, and
+seven reach 50/50 successes. Gains over direct Astra are particularly
+large on MoveCube (100% versus 54%) and StopCube (96% versus 54%). The
+task results in Figure <a href="#fig:task-comparison">3</a> show that
+the combined system performs well across all four memory categories.</p>
+<div class="publication-panel figure-panel">
+<div class="mini-panel">
+<div class="caption">
+<p><strong>Table 1.</strong> Overall success on RoboMME (%).</p>
+</div>
+<span class="reference-anchor" id="tab:performance"></span>
+<div class="table-scroll" tabindex="0" role="region" aria-label="Scrollable report table">
+<table>
+<thead>
+<tr class="header">
+<th style="text-align: left;"><strong>Method</strong></th>
+<th style="text-align: right;"><strong>Overall</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td colspan="2" style="text-align: left;">Learned policies</td>
+</tr>
+<tr class="even">
+<td
+style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>π</mi><mn>0.5</mn></msub><annotation encoding="application/x-tex">\pi_{0.5}</annotation></semantics></math></td>
+<td style="text-align: right;">17.9</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">FrameSamp+Modul</td>
+<td style="text-align: right;">44.5</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">SAM2Act+</td>
+<td style="text-align: right;">21.4</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">SimpleMemVLA</td>
+<td style="text-align: right;">88.3</td>
+</tr>
+<tr class="even">
+<td colspan="2" style="text-align: left;">Direct VLM control</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Astra</td>
+<td style="text-align: right;">92.1</td>
+</tr>
+<tr class="even">
+<td colspan="2" style="text-align: left;">Hierarchical systems</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">MemER</td>
+<td style="text-align: right;">42.4</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">GroundSG+QwenVL</td>
+<td style="text-align: right;">32.7</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">GroundSG+Gemini</td>
+<td style="text-align: right;">11.6</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">PonderPounce-9B</td>
+<td style="text-align: right;">60.8</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Three-tier Astra</td>
+<td style="text-align: right;">79.1</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>Our harness</strong></td>
+<td style="text-align: right;"><strong>97.1</strong></td>
+</tr>
+<tr class="odd">
+<td colspan="2" style="text-align: left;">Privileged references</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Human</td>
+<td style="text-align: right;">90.5</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">GroundSG+Oracle</td>
+<td style="text-align: right;">84.1</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="mini-panel">
+<a class="zoom-image" href="../assets/images/task_comparison.svg" data-zoom aria-label="Enlarge task_comparison"><img src="../assets/images/task_comparison.svg" loading="lazy" alt="task_comparison"></a>
+<div class="caption">
+<p><strong>Figure 3.</strong> Per-task success of our harness and
+published references <span class="citation"
+data-cites="robomme astra-direct">[<a href="#ref-robomme"
+role="doc-biblioref">6</a>, <a href="#ref-astra-direct"
+role="doc-biblioref">12</a>]</span>. Human uses an oracle skill
+interface; GroundSG+Oracle supplies true subgoals to a learned policy;
+Astra directly specifies waypoints.</p>
+</div>
+<span class="reference-anchor" id="fig:task-comparison"></span>
+</div>
+</div>
+<h3 id="supervision-and-execution-efficiency"><span class="section-number">5.2</span> Supervision and execution efficiency</h3>
+<p>Automatic VLA continuation accounts for 54.93% of control steps,
+allowing more than half of execution to proceed without additional Astra
+review (Table <a href="#tab:allocation">2</a>). Astra intervenes
+directly in 33.5% of episodes, but these interventions account for only
+4.91% of control steps. Most motion therefore remains with the learned
+controller, while Astra contributes local corrections when needed.</p>
+<div class="publication-panel table-panel">
+<div class="caption">
+<p><strong>Table 2.</strong> Distribution of executed control steps
+across 800 episodes. Automatic continuation proceeds without an
+additional Astra review.</p>
+</div>
+<span class="reference-anchor" id="tab:allocation"></span>
+<div class="table-scroll" tabindex="0" role="region" aria-label="Scrollable report table">
+<table>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Execution mode</th>
+<th style="text-align: right;">Control steps (%)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Subgoal entry</td>
+<td style="text-align: right;">17.23</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Astra intervention</td>
+<td style="text-align: right;">4.91</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Automatic VLA continuation</td>
+<td style="text-align: right;">54.93</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">VLA continuation after review</td>
+<td style="text-align: right;">22.93</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p>Review frequency adapts to the demands of each task. Insertion
+involves error-prone contact and alignment, so InsertPeg often requires
+close inspection and corrective action. RouteStick instead contains
+short directional subtasks; Astra tends to permit one chunk at a time to
+avoid continuing past a subtask boundary. In VideoPlaceButton, Astra can
+allow longer execution intervals once the target has been identified.
+These patterns suggest that review needs vary across task stages, with
+some stages requiring closer supervision than others.</p>
+<p>Appendix <a href="#app:completion-time">E</a> reports full-benchmark
+completion times. We use a matched comparison to examine the effect of
+review frequency on execution time and model usage.</p>
+<h4 id="matched-review-policy-comparison" class="paragraph-heading">Matched review-policy comparison.</h4>
+<p>Delegation reduces completion time on the nine StopCube seeds that
+succeed under both review policies (Table <a href="#tab:paired">3</a>).
+Mean execution time falls from 513.2 to 285.6 s, a reduction of 44.3%,
+and delegation is faster in all nine pairs. Across all ten seeds, the
+two conditions execute similar numbers of control steps, while
+delegation automatically continues 57.6% of execution requests and
+reduces total input tokens by 60.7%. Per-chunk review succeeds on 10/10
+seeds and delegation on 9/10. This comparison shows that delegation can
+substantially reduce execution time and token usage, although it fails
+on one seed completed successfully by per-chunk review.</p>
+<div class="publication-panel table-panel">
+<div class="caption">
+<p><strong>Table 3.</strong> StopCube review-policy comparison on ten
+matched seeds with experience updates disabled. Timing uses successful
+episodes; the paired row uses the nine seeds successful in both
+conditions. Token counts include cached input and cover execution across
+all ten episodes.</p>
+</div>
+<span class="reference-anchor" id="tab:paired"></span>
+<div class="table-scroll" tabindex="0" role="region" aria-label="Scrollable report table">
+<table>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Measurement</th>
+<th style="text-align: right;">Per-chunk review</th>
+<th style="text-align: right;">Delegation</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Successes / episodes</td>
+<td style="text-align: right;">10/10</td>
+<td style="text-align: right;">9/10</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Successful episodes: mean time (s)</td>
+<td style="text-align: right;">512.0</td>
+<td style="text-align: right;">285.6</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Successful episodes: median / P90 (s)</td>
+<td style="text-align: right;">548.8 / 727.0</td>
+<td style="text-align: right;">240.2 / 392.0</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Jointly successful seeds: mean time
+(s)</td>
+<td style="text-align: right;">513.2</td>
+<td style="text-align: right;">285.6</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Automatic / all requests (%)</td>
+<td style="text-align: right;">0.0</td>
+<td style="text-align: right;">57.6</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Mean control steps / episode</td>
+<td style="text-align: right;">202.1</td>
+<td style="text-align: right;">201.0</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Total input tokens (millions)</td>
+<td style="text-align: right;">30.63</td>
+<td style="text-align: right;">12.05</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Uncached input tokens (millions)</td>
+<td style="text-align: right;">2.22</td>
+<td style="text-align: right;">1.19</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<h3 id="execution-and-experience-analysis"><span class="section-number">5.3</span> Execution and experience analysis</h3>
+<p>Across the evaluation, Astra updates the experience store after 37
+episodes, producing 43 entries, including seven revisions of earlier
+advice. Later execution decisions explicitly cite 38 of these entries
+across 468 episodes. The cases below show how this reused experience
+changes review intervals and target interpretation, helping Astra adapt
+its supervision to the VLA’s observed behavior.</p>
+<h4 id="revising-execution-advice" class="paragraph-heading">Revising execution advice.</h4>
+<p>In PickXtimes, Astra observes hovering during button pressing and
+subsequently adds a stationary-motion monitor to the recommended 90-step
+budget. In the next episode, execution again reaches the 90-step budget
+without triggering the monitor. The recorded motion never satisfies the
+2 mm stationary threshold over a 32-step window: the smallest position
+diameter is 26.9 mm. Astra revises the advice to 60 initial steps, with
+review intervals of at most 16 steps during contact or recovery. In the
+following episode, Astra explicitly cites the revision and sets a
+60-step budget with the stationary-motion monitor enabled. The VLA
+executes four chunks of 16, 16, 16, and 12 steps before budget
+exhaustion; Astra then permits another action chunk, which completes the
+task after 13 steps. Figure <a href="#fig:trace">4</a> illustrates this
+revision and subsequent execution. The revised advice brings visual
+review forward while retaining stationary-motion monitoring as another
+way to trigger review.</p>
+<div class="publication-panel figure-panel">
+<div class="case-frame">
+<a class="zoom-image" href="../assets/images/PickXtimes-ep0-f689-front.png" data-zoom aria-label="Enlarge PickXtimes ep0 f689 front"><img src="../assets/images/PickXtimes-ep0-f689-front.png" loading="lazy" alt="PickXtimes ep0 f689 front"></a>
+<p><strong>Episode 0</strong> / frame 689</p>
+<p>Hovering inspected after execution</p>
+</div>
+<div class="case-frame">
+<a class="zoom-image" href="../assets/images/PickXtimes-ep1-f284-front.png" data-zoom aria-label="Enlarge PickXtimes ep1 f284 front"><img src="../assets/images/PickXtimes-ep1-f284-front.png" loading="lazy" alt="PickXtimes ep1 f284 front"></a>
+<p><strong>Episode 1</strong> / frame 284</p>
+<p>90-step budget; monitor does not trigger</p>
+</div>
+<div class="case-frame">
+<a class="zoom-image" href="../assets/images/PickXtimes-ep2-f288-front.png" data-zoom aria-label="Enlarge PickXtimes ep2 f288 front"><img src="../assets/images/PickXtimes-ep2-f288-front.png" loading="lazy" alt="PickXtimes ep2 f288 front"></a>
+<p><strong>Episode 2</strong> / frame 288</p>
+<p>Review after the revised 60-step budget</p>
+</div>
+<div class="caption">
+<p><strong>Figure 4.</strong> Experience revision across three
+PickXtimes episodes. Hovering motivates adding a stationary-motion
+monitor; continued motion prevents it from triggering in episode 1.
+Astra then shortens the budget from 90 to 60 steps and adopts this
+advice in episode 2. Figure <a href="#fig:within-episode-cases">6</a>(a)
+follows episode 2 from review to completion.</p>
+</div>
+<span class="reference-anchor" id="fig:trace"></span>
+</div>
+<h4 id="revising-historical-interpretation" class="paragraph-heading">Revising historical interpretation.</h4>
+<p>In VideoPlaceButton, a failed episode leads to advice for tracking
+visually similar rings through late demonstration swaps, but the
+resulting recommendation incorrectly assumes a before-press query. In
+the next episode, the task asks for the first event after the press;
+Astra recognizes that the earlier rule does not apply and subsequently
+revises it to condition on the current temporal query. A later episode
+asks for the last event before the press. Astra explicitly cites the
+revision in its notes and execution decision, examines the relevant
+historical frames, and selects the topmost ring. With an 80-step budget,
+the VLA completes the task after 54 steps. The revision preserves the
+identity-tracking advice while making target selection conditional on
+the requested temporal relation (Figure <a
+href="#fig:history-case">5</a>).</p>
+<div class="publication-panel figure-panel">
+<div class="case-frame">
+<a class="zoom-image" href="../assets/images/VideoPlaceButton-ep3-f700-front.png" data-zoom aria-label="Enlarge VideoPlaceButton ep3 f700 front"><img src="../assets/images/VideoPlaceButton-ep3-f700-front.png" loading="lazy" alt="VideoPlaceButton ep3 f700 front"></a>
+<p><strong>Episode 3</strong> / frame 700</p>
+<p>Late swap inspected after failure</p>
+</div>
+<div class="case-frame">
+<a class="zoom-image" href="../assets/images/VideoPlaceButton-ep4-f501-front.png" data-zoom aria-label="Enlarge VideoPlaceButton ep4 f501 front"><img src="../assets/images/VideoPlaceButton-ep4-f501-front.png" loading="lazy" alt="VideoPlaceButton ep4 f501 front"></a>
+<p><strong>Episode 4</strong> / frame 501</p>
+<p>First-after query exposes the rule’s limit</p>
+</div>
+<div class="case-frame">
+<a class="zoom-image" href="../assets/images/VideoPlaceButton-ep10-f1006-front.png" data-zoom aria-label="Enlarge VideoPlaceButton ep10 f1006 front"><img src="../assets/images/VideoPlaceButton-ep10-f1006-front.png" loading="lazy" alt="VideoPlaceButton ep10 f1006 front"></a>
+<p><strong>Episode 10</strong> / frame 1006</p>
+<p>Revised rule used for a last-before query</p>
+</div>
+<div class="caption">
+<p><strong>Figure 5.</strong> Experience revision across three
+VideoPlaceButton episodes. The first rule tracks ring identity but
+assumes a before-press query. A first-after query prompts a conditional
+revision, later applied to a last-before query. Figure <a
+href="#fig:within-episode-cases">6</a>(b) shows the late swap within
+episode 3.</p>
+</div>
+<span class="reference-anchor" id="fig:history-case"></span>
+</div>
+<h3 id="failure-analysis"><span class="section-number">5.4</span> Failure analysis</h3>
+<p>We manually inspect all 23 failed episodes and group their primary
+causes into historical interpretation (8), subgoal grounding (1),
+execution (9), and review or recovery (5).</p>
+<p>Specifically, historical interpretation accounts for all five
+VideoPlaceOrder failures and also affects VideoPlaceButton and
+InsertPeg. The RouteStick grounding error concerns the task’s left–right
+convention. Execution problems include insufficient endpoint motion in
+two SwingXtimes episodes and insufficient container lift in one
+VideoUnmaskSwap episode. Two ButtonUnmaskSwap episodes advance before
+the button action is complete, and the two StopCube failures involve
+early or missed button timing. Repeated alignment and contact recovery
+also leave some InsertPeg episodes unsuccessful. These cases identify
+where history interpretation, progress review, and local correction
+still need improvement; representative trajectories appear in Figure <a
+href="#fig:failures">7</a>, with further details in Appendix <a
+href="#app:failure-analysis">H</a>.</p>
+<h2 id="discussion-and-limitations"><span class="section-number">6</span> Discussion and limitations</h2>
+<p>Despite high task success and less frequent Astra review, the harness
+has several limitations. On-demand history queries avoid including the
+entire observation history in every Astra reasoning context. Sparse
+sampling can nevertheless omit a brief event or a late target swap,
+leading Astra to choose the wrong subgoal. More targeted retrieval of
+historical observations could reduce these errors without requiring the
+entire history to be included in the context.</p>
+<p>Experience revision allows Astra to correct advice after new
+outcomes, yet an incorrect recommendation can still influence subsequent
+decisions before it is revised. The current store also has no explicit
+bound on the amount of accumulated advice. As the store grows, redundant
+or conflicting recommendations may increase context usage and make it
+harder to select appropriate advice. Retrieval and consolidation that
+retain useful distinctions while removing redundant advice are natural
+extensions.</p>
+<p>Reducing review frequency addresses only part of the execution
+overhead. Each Astra decision still requires remote model inference,
+introducing latency whenever execution pauses for supervisory review.
+Faster supervisory inference and more selective invocation remain
+important for approaching the responsiveness of a standalone VLA
+policy.</p>
+<h2 id="conclusion"><span class="section-number">7</span> Conclusion</h2>
+<p>We present a self-evolving harness that uses execution experience to
+guide Astra’s supervision of a learned manipulation policy. Across 800
+episodes on all 16 RoboMME tasks, the system achieves 97.1% success,
+with 54.9% of control steps executed without additional Astra review.
+These results illustrate how accumulated execution experience can inform
+Astra’s review, task interpretation, and recovery decisions, while
+allowing the VLA to handle most low-level control.</p>
+<h2 id="references">References</h2><div id="refs" class="references csl-bib-body" data-entry-spacing="1"
+role="list">
+<div id="ref-pi05" class="csl-entry" role="listitem">
+<div class="csl-left-margin">1. </div><div class="csl-right-inline">K.
+Black, N. Brown, J. Darpinian, K. Dhabalia, D. Driess, A. Esmail, M. R.
+Equi, C. Finn, N. Fusai, M. Y. Galliker, D. Ghosh, L. Groom, K. Hausman,
+brian ichter, S. Jakubczak, T. Jones, L. Ke, D. LeBlanc, S. Levine, A.
+Li-Bell, M. Mothukuri, S. Nair, K. Pertsch, A. Z. Ren, L. X. Shi, L.
+Smith, J. T. Springenberg, K. Stachowicz, J. Tanner, Q. Vuong, H. Walke,
+A. Walling, H. Wang, L. Yu, and U. Zhilinsky. <span
+class="nocase"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>π</mi><mn>0.5</mn></msub><annotation encoding="application/x-tex">\pi_{0.5}</annotation></semantics></math>:
+a Vision-Language-Action Model with Open-World Generalization</span>.
+<em>Proceedings of the 9th conference on robot learning</em>. 2025. <a
+href="https://proceedings.mlr.press/v305/black25a.html">https://proceedings.mlr.press/v305/black25a.html</a></div>
+</div>
+<div id="ref-tau0-vla" class="csl-entry" role="listitem">
+<div class="csl-left-margin">2. </div><div class="csl-right-inline">X.
+Cai, Y. Cai, B. Chen, J. Chen, Z. Chen, S. Feng, T. Hou, J. Huang, H.
+Jiang, R. Ju, D. Li, M. Li, S. Li, X. Li, Y. Li, Y. Liu, Z. Liu, J. Luo,
+J. Miao, R. Ni, B. Nie, M. Pan, X. Ren, J. Song, J. Wang, P. Wang, S.
+Wang, X. Wang, D. Wei, D. Wu, P. Xie, P. Yang, H. Ye, X. Yue, J. Zhang,
+Q. Zhang, X. Zhao, P. Zhou, and Y. Zhou. <span
+class="nocase"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>τ</mi><mn>0</mn></msub><annotation encoding="application/x-tex">\tau_0</annotation></semantics></math>-VLA:
+a Hierarchical Robot Foundation Model with World-Model-Guided Test-Time
+Computation</span>. 2026. <a
+href="https://arxiv.org/abs/2608.16885">https://arxiv.org/abs/2608.16885</a></div>
+</div>
+<div id="ref-astra-three-tier" class="csl-entry" role="listitem">
+<div class="csl-left-margin">3. </div><div class="csl-right-inline">B.
+Chen, H. Fang, and C. K. Liu. <span class="nocase">Can Astra Solve
+RoboMME without Breaking the Bank?</span> <a
+href="https://bingaochen.github.io/Astra-on-RoboMME/">https://bingaochen.github.io/Astra-on-RoboMME/</a></div>
+</div>
+<div id="ref-gpt-policy" class="csl-entry" role="listitem">
+<div class="csl-left-margin">4. </div><div class="csl-right-inline">D.
+Cheng, T. Yi, Y. Fang, X. Zhang, F. Feng, Y. Li, G. Zhuang, R. Wang, S.
+Yang, W. Song, W. Xue, M. Wu, J. Gui, J. Wang, and T. Wu. <span
+class="nocase">In-Context Robot Learning with VLM Agents</span>. 2026.
+<a
+href="https://arxiv.org/abs/2609.19138">https://arxiv.org/abs/2609.19138</a></div>
+</div>
+<div id="ref-ponderpounce" class="csl-entry" role="listitem">
+<div class="csl-left-margin">5. </div><div class="csl-right-inline">S.
+Choi, J. Jung, S. Kim, Y. Lee, and Y. Yu. <span
+class="nocase">PonderPounce: A Pretrained MLLM as an Episode Context
+Engine for Robot Control</span>. 2026. <a
+href="https://arxiv.org/abs/2608.24115">https://arxiv.org/abs/2608.24115</a></div>
+</div>
+<div id="ref-robomme" class="csl-entry" role="listitem">
+<div class="csl-left-margin">6. </div><div class="csl-right-inline">Y.
+Dai, H. Fu, J. Lee, Y. Liu, H. Zhang, J. Yang, C. Finn, N. Fazeli, and
+J. Chai. <span class="nocase"><span>R</span>obo<span>MME</span>:
+Benchmarking and Understanding Memory for Robotic Generalist
+Policies</span>. <em>Proceedings of the 43rd international conference on
+machine learning</em>. 2026. <a
+href="https://proceedings.mlr.press/v306/dai26c.html">https://proceedings.mlr.press/v306/dai26c.html</a></div>
+</div>
+<div id="ref-sam2act" class="csl-entry" role="listitem">
+<div class="csl-left-margin">7. </div><div class="csl-right-inline">H.
+Fang, M. Grotz, W. Pumacay, Y. R. Wang, D. Fox, R. Krishna, and J. Duan.
+<span class="nocase"><span>SAM</span>2<span>A</span>ct: Integrating
+Visual Foundation Model with A Memory Architecture for Robotic
+Manipulation</span>. <em>Proceedings of the 42nd international
+conference on machine learning</em>. 2025. <a
+href="https://proceedings.mlr.press/v267/fang25c.html">https://proceedings.mlr.press/v267/fang25c.html</a></div>
+</div>
+<div id="ref-mebrain" class="csl-entry" role="listitem">
+<div class="csl-left-margin">8. </div><div class="csl-right-inline">W.
+He, H. Li, C. Wang, Z. Yu, X. Zhu, M. He, Z. Liu, X. Zhang, X. Mao, C.
+Zhou, J. Shi, Y. Xin, J. Li, J. Zheng, S. Zeng, F. Lu, Z. Zhang, S. Guo,
+H. Zhang, P. Yu, J. Shi, Y. Liu, K. Zhan, and Y. Xie. <span
+class="nocase">ME-Brain-1.0: Memory, Cognition and Action for Evolving
+Embodied Intelligence</span>. 2026. <a
+href="https://arxiv.org/abs/2609.24271">https://arxiv.org/abs/2609.24271</a></div>
+</div>
+<div id="ref-voxposer" class="csl-entry" role="listitem">
+<div class="csl-left-margin">9. </div><div class="csl-right-inline">W.
+Huang, C. Wang, R. Zhang, Y. Li, J. Wu, and L. Fei-Fei. <span
+class="nocase">VoxPoser: Composable 3D Value Maps for Robotic
+Manipulation with Language Models</span>. <em>Proceedings of the 7th
+conference on robot learning</em>. 2023. <a
+href="https://proceedings.mlr.press/v229/huang23b.html">https://proceedings.mlr.press/v229/huang23b.html</a></div>
+</div>
+<div id="ref-inner-monologue" class="csl-entry" role="listitem">
+<div class="csl-left-margin">10. </div><div class="csl-right-inline">W.
+Huang, F. Xia, T. Xiao, H. Chan, J. Liang, P. Florence, A. Zeng, J.
+Tompson, I. Mordatch, Y. Chebotar, P. Sermanet, T. Jackson, N. Brown, L.
+Luu, S. Levine, K. Hausman, and brian ichter. <span class="nocase">Inner
+Monologue: Embodied Reasoning through Planning with Language
+Models</span>. <em>Proceedings of the 6th conference on robot
+learning</em>. 2023. <a
+href="https://proceedings.mlr.press/v205/huang23c.html">https://proceedings.mlr.press/v205/huang23c.html</a></div>
+</div>
+<div id="ref-saycan" class="csl-entry" role="listitem">
+<div class="csl-left-margin">11. </div><div
+class="csl-right-inline">brian ichter, A. Brohan, Y. Chebotar, C. Finn,
+K. Hausman, A. Herzog, D. Ho, J. Ibarz, A. Irpan, E. Jang, R. Julian, D.
+Kalashnikov, S. Levine, Y. Lu, C. Parada, K. Rao, P. Sermanet, A. T.
+Toshev, V. Vanhoucke, F. Xia, T. Xiao, P. Xu, M. Yan, N. Brown, M. Ahn,
+O. Cortes, N. Sievers, C. Tan, S. Xu, D. Reyes, J. Rettinghouse, J.
+Quiambao, P. Pastor, L. Luu, K.-H. Lee, Y. Kuang, S. Jesmonth, N. J.
+Joshi, K. Jeffrey, R. J. Ruano, J. Hsu, K. Gopalakrishnan, B. David, A.
+Zeng, and C. K. Fu. <span class="nocase">Do As I Can, Not As I Say:
+Grounding Language in Robotic Affordances</span>. <em>Proceedings of the
+6th conference on robot learning</em>. 2023. <a
+href="https://proceedings.mlr.press/v205/ichter23a.html">https://proceedings.mlr.press/v205/ichter23a.html</a></div>
+</div>
+<div id="ref-astra-direct" class="csl-entry" role="listitem">
+<div class="csl-left-margin">12. </div><div class="csl-right-inline">J.
+B. Jedlicki, A. Sethi, and H. Yang. <span class="nocase">Can a Frontier
+VLM Serve as a Robot Policy for Memory-Dependent Manipulation?</span>
+2026. <a
+href="https://arxiv.org/abs/2610.17350">https://arxiv.org/abs/2610.17350</a></div>
+</div>
+<div id="ref-openvla" class="csl-entry" role="listitem">
+<div class="csl-left-margin">13. </div><div class="csl-right-inline">M.
+J. Kim, K. Pertsch, S. Karamcheti, T. Xiao, A. Balakrishna, S. Nair, R.
+Rafailov, E. P. Foster, P. R. Sanketi, Q. Vuong, T. Kollar, B.
+Burchfiel, R. Tedrake, D. Sadigh, S. Levine, P. Liang, and C. Finn.
+<span>OpenVLA: An Open-Source Vision-Language-Action Model</span>.
+<em>Proceedings of the 8th conference on robot learning</em>. 2025. <a
+href="https://proceedings.mlr.press/v270/kim25c.html">https://proceedings.mlr.press/v270/kim25c.html</a></div>
+</div>
+<div id="ref-code-as-policies" class="csl-entry" role="listitem">
+<div class="csl-left-margin">14. </div><div class="csl-right-inline">J.
+Liang, W. Huang, F. Xia, P. Xu, K. Hausman, B. Ichter, P. Florence, and
+A. Zeng. Code as policies: Language model programs for embodied control.
+<em>2023 IEEE international conference on robotics and automation
+(ICRA)</em>. 2023. <a
+href="https://doi.org/10.1109/icra48891.2023.10160591">https://doi.org/10.1109/icra48891.2023.10160591</a></div>
+</div>
+<div id="ref-roboicl" class="csl-entry" role="listitem">
+<div class="csl-left-margin">15. </div><div class="csl-right-inline">F.
+Liu, Y. Shen, A. Cheng, W. Mi, C. Tang, C. Liu, Y. Xiang, T. Li, Y.-L.
+Li, and Y. Tang. <span class="nocase">RoboICL: Embodied In-Context
+Learning with GPT-6 Astra</span>. 2026. <a
+href="https://arxiv.org/abs/2609.34261">https://arxiv.org/abs/2609.34261</a></div>
+</div>
+<div id="ref-reflexion" class="csl-entry" role="listitem">
+<div class="csl-left-margin">16. </div><div class="csl-right-inline">N.
+Shinn, F. Cassano, A. Gopinath, K. Narasimhan, and S. Yao. <span
+class="nocase">Reflexion: language agents with verbal reinforcement
+learning</span>. <em>Advances in neural information processing
+systems</em>. 2023. <a
+href="https://doi.org/10.52202/075280-0377">https://doi.org/10.52202/075280-0377</a></div>
+</div>
+<div id="ref-memer" class="csl-entry" role="listitem">
+<div class="csl-left-margin">17. </div><div class="csl-right-inline">A.
+Sridhar, J. Pan, S. Sharma, and C. Finn. <span class="nocase">MemER:
+Scaling Up Memory for Robot Control via Experience Retrieval</span>.
+<em>The fourteenth international conference on learning
+representations</em>. 2026. <a
+href="https://arxiv.org/abs/2510.20328">https://arxiv.org/abs/2510.20328</a></div>
+</div>
+<div id="ref-mem" class="csl-entry" role="listitem">
+<div class="csl-left-margin">18. </div><div class="csl-right-inline">M.
+Torne, K. Pertsch, H. Walke, K. Vedder, S. Nair, B. Ichter, A. Z. Ren,
+H. Wang, J. Tang, K. Stachowicz, K. Dhabalia, M. Equi, Q. Vuong, J. T.
+Springenberg, S. Levine, C. Finn, and D. Driess. <span
+class="nocase">MEM: Multi-Scale Embodied Memory for Vision Language
+Action Models</span>. 2026. <a
+href="https://arxiv.org/abs/2603.03596">https://arxiv.org/abs/2603.03596</a></div>
+</div>
+<div id="ref-voyager" class="csl-entry" role="listitem">
+<div class="csl-left-margin">19. </div><div class="csl-right-inline">G.
+Wang, Y. Xie, Y. Jiang, A. Mandlekar, C. Xiao, Y. Zhu, L. Fan, and A.
+Anandkumar. <span class="nocase">Voyager: An Open-Ended Embodied Agent
+with Large Language Models</span>. <em>Transactions on Machine Learning
+Research</em>. 2024. <a
+href="https://openreview.net/forum?id=ehfRiF0R3a">https://openreview.net/forum?id=ehfRiF0R3a</a></div>
+</div>
+<div id="ref-simplememvla" class="csl-entry" role="listitem">
+<div class="csl-left-margin">20. </div><div class="csl-right-inline">C.
+Yin, W. Xu, J. Yang, S. Tam, H. Liu, Y. Yao, X. Zeng, J. Cui, Y. Wang,
+Z. Yin, and Y. Lin. <span class="nocase">SimpleMemVLA: A Simple but
+Effective Native-Video Memory for Vision-Language-Action Models</span>.
+2026. <a
+href="https://arxiv.org/abs/2609.05533">https://arxiv.org/abs/2609.05533</a></div>
+</div>
+<div id="ref-rt2" class="csl-entry" role="listitem">
+<div class="csl-left-margin">21. </div><div class="csl-right-inline">B.
+Zitkovich, T. Yu, S. Xu, P. Xu, T. Xiao, F. Xia, J. Wu, P. Wohlhart, S.
+Welker, A. Wahid, Q. Vuong, V. Vanhoucke, H. Tran, R. Soricut, A. Singh,
+J. Singh, P. Sermanet, P. R. Sanketi, G. Salazar, M. S. Ryoo, K.
+Reymann, K. Rao, K. Pertsch, I. Mordatch, H. Michalewski, Y. Lu, S.
+Levine, L. Lee, T.-W. E. Lee, I. Leal, Y. Kuang, D. Kalashnikov, R.
+Julian, N. J. Joshi, A. Irpan, B. Ichter, J. Hsu, A. Herzog, K. Hausman,
+K. Gopalakrishnan, C. Fu, P. Florence, C. Finn, K. A. Dubey, D. Driess,
+T. Ding, K. M. Choromanski, X. Chen, Y. Chebotar, J. Carbajal, N. Brown,
+A. Brohan, M. G. Arenas, and K. Han. <span class="nocase">RT-2:
+Vision-Language-Action Models Transfer Web Knowledge to Robotic
+Control</span>. <em>Proceedings of the 7th conference on robot
+learning</em>. 2023. <a
+href="https://proceedings.mlr.press/v229/zitkovich23a.html">https://proceedings.mlr.press/v229/zitkovich23a.html</a></div>
+</div>
+</div>
+
+<div class="appendix-divider" id="appendices">Appendices</div>
+<h2 id="app:configuration"><span class="section-number">A</span> Experimental settings</h2>
+<p>Table <a href="#tab:config">4</a> specifies the model, experience,
+and execution settings used in evaluation. We use the official GroundSG
+checkpoint trained on the RoboMME training split, and training
+demonstrations also provide the initial duration advice. During testing,
+experience updates follow the schedule in Section <a
+href="#sec:setup">4</a>. Global advice is shared across tasks, while all
+37 accepted updates during the formal evaluation are task-specific. Each
+episode uses a fixed version of the experience store.</p>
+<div class="publication-panel table-panel">
+<div class="caption">
+<p><strong>Table 4.</strong> Evaluation settings. Control limits apply
+to actual executed control steps, including interventions.</p>
+</div>
+<span class="reference-anchor" id="tab:config"></span>
+<div class="table-scroll" tabindex="0" role="region" aria-label="Scrollable report table">
+<table>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Setting</th>
+<th style="text-align: left;">Value</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Astra model and reasoning setting</td>
+<td style="text-align: left;">GPT-6 Astra; high reasoning effort</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">VLA checkpoint and inference</td>
+<td style="text-align: left;">Official RoboMME GroundSG
+(<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>π</mi><mn>0.5</mn></msub><annotation encoding="application/x-tex">\pi_{0.5}</annotation></semantics></math>),
+training step 79,999; inference seed 42 with independent random state
+per connection</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Environment control frequency</td>
+<td style="text-align: left;">20 Hz</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Camera observations</td>
+<td style="text-align: left;">Front and wrist RGB images</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Sparse history query</td>
+<td style="text-align: left;">Up to eight uniformly sampled frames,
+including endpoints</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Delegation budget range</td>
+<td style="text-align: left;">30 to 200, in increments of 10 control
+steps</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Executed actions per VLA prediction</td>
+<td style="text-align: left;">Up to the first 16 predicted actions,
+limited by the remaining execution budget</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Episode API limit</td>
+<td style="text-align: left;">80 calls; 8,192 output tokens per call;
+300,000-token context limit</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Cross-task experience</td>
+<td style="text-align: left;">Shared global advice and separate task
+experience; fixed version per episode</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Paired comparison sample</td>
+<td style="text-align: left;">Ten StopCube seeds; 1,000 control steps
+per run; no experience updates</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Compute and serving</td>
+<td style="text-align: left;">Paired experiment: one NVIDIA A100 80GB
+for the VLA, dual Intel Xeon Platinum 8358P CPUs for simulation; Astra
+via remote API</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<h3 id="robot-state-monitors" class="paragraph-heading">Robot-state monitors.</h3>
+<p>The measured gripper monitor detects a total finger-width change of
+at least 5 mm from the start of the execution interval, sustained for
+two measured samples in the same direction. The direction monitor checks
+predicted or measured displacement greater than 20 mm in a selected
+signed world-frame direction relative to the robot pose at the start of
+the execution interval. The stationary-motion monitor uses a position
+diameter of at most 2 mm and an orientation diameter of at most
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mn>2</mn><mo>∘</mo></msup><annotation encoding="application/x-tex">2^\circ</annotation></semantics></math>
+over 32 control steps. An impending gripper-command switch can also
+trigger review. Astra selects the active monitors for each execution
+interval. Budget exhaustion prompts review, and episode termination
+stops execution.</p>
+<h2 id="app:task-results"><span class="section-number">B</span> Per-task performance and execution allocation</h2>
+<p>Table <a href="#tab:task-results">5</a> reports success and execution
+allocation for each task. Automatic continuation counts execution after
+the first chunk of an execution interval. The control fraction includes
+direct Astra interventions in its denominator. Each task contributes 50
+episodes, and pooled allocation fractions weight tasks by their executed
+chunk or control counts.</p>
+<div class="publication-panel table-panel">
+<div class="caption">
+<p><strong>Table 5.</strong> Per-task results. SR: success rate; auto
+chunks: automatic continuation as a fraction of all VLA chunks; auto
+control steps: automatic continuation as a fraction of all executed
+control steps. All entries are percentages.</p>
+</div>
+<span class="reference-anchor" id="tab:task-results"></span>
+<div class="table-scroll" tabindex="0" role="region" aria-label="Scrollable report table">
+<table>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Category</th>
+<th style="text-align: left;">Task</th>
+<th style="text-align: right;">SR (%)</th>
+<th style="text-align: right;">Auto chunks (%)</th>
+<th style="text-align: right;">Auto control steps (%)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Counting</td>
+<td style="text-align: left;">BinFill</td>
+<td style="text-align: right;">96.0</td>
+<td style="text-align: right;">63.61</td>
+<td style="text-align: right;">60.41</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">StopCube</td>
+<td style="text-align: right;">96.0</td>
+<td style="text-align: right;">65.15</td>
+<td style="text-align: right;">68.87</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">PickXtimes</td>
+<td style="text-align: right;">100.0</td>
+<td style="text-align: right;">53.95</td>
+<td style="text-align: right;">49.13</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">SwingXtimes</td>
+<td style="text-align: right;">96.0</td>
+<td style="text-align: right;">46.87</td>
+<td style="text-align: right;">45.20</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Permanence</td>
+<td style="text-align: left;">ButtonUnmask</td>
+<td style="text-align: right;">100.0</td>
+<td style="text-align: right;">73.84</td>
+<td style="text-align: right;">69.51</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">VideoUnmask</td>
+<td style="text-align: right;">100.0</td>
+<td style="text-align: right;">73.88</td>
+<td style="text-align: right;">71.42</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">VideoUnmaskSwap</td>
+<td style="text-align: right;">98.0</td>
+<td style="text-align: right;">69.11</td>
+<td style="text-align: right;">65.87</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">ButtonUnmaskSwap</td>
+<td style="text-align: right;">92.0</td>
+<td style="text-align: right;">50.26</td>
+<td style="text-align: right;">41.35</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Reference</td>
+<td style="text-align: left;">PickHighlight</td>
+<td style="text-align: right;">100.0</td>
+<td style="text-align: right;">71.43</td>
+<td style="text-align: right;">69.17</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">VideoRepick</td>
+<td style="text-align: right;">100.0</td>
+<td style="text-align: right;">67.55</td>
+<td style="text-align: right;">63.03</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">VideoPlaceButton</td>
+<td style="text-align: right;">98.0</td>
+<td style="text-align: right;">76.26</td>
+<td style="text-align: right;">75.36</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">VideoPlaceOrder</td>
+<td style="text-align: right;">90.0</td>
+<td style="text-align: right;">63.44</td>
+<td style="text-align: right;">65.93</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Imitation</td>
+<td style="text-align: left;">MoveCube</td>
+<td style="text-align: right;">100.0</td>
+<td style="text-align: right;">53.30</td>
+<td style="text-align: right;">48.64</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">InsertPeg</td>
+<td style="text-align: right;">90.0</td>
+<td style="text-align: right;">29.06</td>
+<td style="text-align: right;">29.01</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">PatternLock</td>
+<td style="text-align: right;">100.0</td>
+<td style="text-align: right;">35.62</td>
+<td style="text-align: right;">34.06</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">RouteStick</td>
+<td style="text-align: right;">98.0</td>
+<td style="text-align: right;">25.65</td>
+<td style="text-align: right;">22.30</td>
+</tr>
+<tr class="odd">
+<td colspan="2" style="text-align: left;">Overall / pooled</td>
+<td style="text-align: right;">97.1</td>
+<td style="text-align: right;">58.11</td>
+<td style="text-align: right;">54.93</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<h2 id="app:interfaces"><span class="section-number">C</span> Interface and experience details</h2>
+<h3 id="observation-provenance" class="paragraph-heading">Observation provenance.</h3>
+<p>Image-delivery records distinguish the visual evidence included in
+each successful Astra request from observations available only through
+retrospective inspection of the full recording.</p>
+<h3 id="grounding" class="paragraph-heading">Grounding.</h3>
+<p>For a front image of height
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>H</mi><annotation encoding="application/x-tex">H</annotation></semantics></math>
+and width
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>W</mi><annotation encoding="application/x-tex">W</annotation></semantics></math>,
+a normalized point
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mrow><mo stretchy="true" form="prefix">(</mo><msub><mi>y</mi><mi>n</mi></msub><mo>,</mo><msub><mi>x</mi><mi>n</mi></msub><mo stretchy="true" form="postfix">)</mo></mrow><mo>∈</mo><msup><mrow><mo stretchy="true" form="prefix">[</mo><mn>0</mn><mo>,</mo><mn>1000</mn><mo stretchy="true" form="postfix">]</mo></mrow><mn>2</mn></msup></mrow><annotation encoding="application/x-tex">(y_n,x_n)\in[0,1000]^2</annotation></semantics></math>
+is converted to</p>
+<div class="equation">
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>y</mi><mo>=</mo><mo>min</mo><mrow><mo stretchy="true" form="prefix">(</mo><mo stretchy="false" form="prefix">⌊</mo><msub><mi>y</mi><mi>n</mi></msub><mi>H</mi><mi>/</mi><mn>1000</mn><mo stretchy="false" form="postfix">⌋</mo><mo>,</mo><mi>H</mi><mo>−</mo><mn>1</mn><mo stretchy="true" form="postfix">)</mo></mrow><mo>,</mo><mspace width="2.0em"></mspace><mi>x</mi><mo>=</mo><mo>min</mo><mrow><mo stretchy="true" form="prefix">(</mo><mo stretchy="false" form="prefix">⌊</mo><msub><mi>x</mi><mi>n</mi></msub><mi>W</mi><mi>/</mi><mn>1000</mn><mo stretchy="false" form="postfix">⌋</mo><mo>,</mo><mi>W</mi><mo>−</mo><mn>1</mn><mo stretchy="true" form="postfix">)</mo></mrow><mi>.</mi></mrow><annotation encoding="application/x-tex">y=\min(\lfloor y_nH/1000\rfloor,H-1),\qquad
+ x=\min(\lfloor x_nW/1000\rfloor,W-1).</annotation></semantics></math></p>
+<span class="equation-number">(2)</span></div>
+<p>The pixel coordinates replace the instruction’s ordered point slots.
+Validation checks finite coordinate values, normalized bounds, the
+number of supplied points, and compatibility with the task’s templates
+and permitted attributes. Astra can inspect an overlay before setting
+the subgoal. The default sparse history query selects up to eight
+uniformly spaced frames, including interval endpoints.</p>
+<h3 id="control-steps-and-duration-priors" class="paragraph-heading">Control steps and duration priors.</h3>
+<p>A control step is counted at the shared environment action interface,
+separately from simulator integration steps. At environment frequency
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>f</mi><mi>c</mi></msub><mo>=</mo><mn>20</mn><mspace width="0.167em"></mspace><mrow><mi mathvariant="normal">H</mi><mi mathvariant="normal">z</mi></mrow></mrow><annotation encoding="application/x-tex">f_c=20\,\mathrm{Hz}</annotation></semantics></math>,
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>n</mi><annotation encoding="application/x-tex">n</annotation></semantics></math>
+steps correspond nominally to
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>n</mi><mi>/</mi><msub><mi>f</mi><mi>c</mi></msub></mrow><annotation encoding="application/x-tex">n/f_c</annotation></semantics></math>
+seconds of simulated control. Inference and API waiting time contribute
+separately to elapsed time. Repeated training samples are deduplicated
+by task, episode, and timestep before consecutive identical subgoal
+labels are grouped. Segment lengths are estimated from timestep
+differences. For lengths
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>D</mi><mi>s</mi></msub><annotation encoding="application/x-tex">D_s</annotation></semantics></math>
+associated with subgoal
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>s</mi><annotation encoding="application/x-tex">s</annotation></semantics></math>,
+the initial recommendation is</p>
+<div class="equation">
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mover><mi>B</mi><mo accent="true">̂</mo></mover><mi>s</mi></msub><mo>=</mo><mo>min</mo><mspace width="-0.167em"></mspace><mrow><mo stretchy="true" form="prefix">(</mo><mn>200</mn><mo>,</mo><mn>10</mn><mrow><mo stretchy="true" form="prefix">⌊</mo><msub><mi>Q</mi><mn>0.25</mn></msub><mrow><mo stretchy="true" form="prefix">(</mo><msub><mi>D</mi><mi>s</mi></msub><mo stretchy="true" form="postfix">)</mo></mrow><mi>/</mi><mn>10</mn><mo stretchy="true" form="postfix">⌋</mo></mrow><mo stretchy="true" form="postfix">)</mo></mrow><mi>.</mi></mrow><annotation encoding="application/x-tex">\widehat B_s=\min\!\left(200,10\left\lfloor Q_{0.25}(D_s)/10\right\rfloor\right).</annotation></semantics></math></p>
+<span class="equation-number">(3)</span></div>
+<p>Recommendations below 30 control steps become advice for close
+review. Because sampled annotations may miss short segments or include
+trailing frames in terminal segments, these duration estimates serve as
+initial guidance rather than exact subtask boundaries.</p>
+<h3 id="experience-validation-and-applicability" class="paragraph-heading">Experience validation and applicability.</h3>
+<p>Submission checks cover required fields, permitted scope and
+applicability labels, cited frame indices, and the existence of
+superseded identifiers. Scheduling advice is also checked for
+compatibility with subgoal templates and valid monitor parameters.
+Experience entries are marked as either policy-independent or specific
+to a review policy. When retrieving advice, the harness first selects
+entries applicable to the current policy and then resolves superseded
+recommendations. The optional scheduling field
+<code>max_trust_steps</code> records a recommended review interval; the
+configured execution maximum remains the enforced limit.</p>
+<h2 id="app:measurements"><span class="section-number">D</span> Measurement definitions</h2>
+<p>Success rate is the number of officially successful episodes divided
+by the evaluated count. Equal task sizes make overall success equal to
+the mean task success rate. Execution-time summaries include only the
+777 successful episodes; token totals include all 800 episodes. API
+attempts and elapsed time include failed requests. Token statistics
+report coverage of returned usage; cached input is a subset of total
+input, and missing usage remains unknown. Execution and post-episode
+revision token totals are reported separately. API latency for revision
+is not a measurement of the complete revision wall time.</p>
+<p>Automatic continuation counts VLA chunks executed after the first
+chunk of an execution interval. The all-chunk fraction divides these by
+all executed VLA chunks. The automatic-control fraction divides control
+steps in continuation chunks by all executed control steps, including
+direct interventions. Fractions use pooled counts across episodes rather
+than averages of episode percentages.</p>
+<div class="publication-panel table-panel">
+<div class="caption">
+<p><strong>Table 6.</strong> Execution allocation across all 800
+episodes. Each row counts executed robot-control requests (VLA chunks or
+direct intervention segments); direct interventions can have different
+lengths from VLA chunks. Percentages use pooled counts.</p>
+</div>
+<span class="reference-anchor" id="tab:allocation-detail"></span>
+<div class="table-scroll" tabindex="0" role="region" aria-label="Scrollable report table">
+<table>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Execution mode</th>
+<th style="text-align: right;">Requests</th>
+<th style="text-align: right;">Share (%)</th>
+<th style="text-align: right;">Control steps</th>
+<th style="text-align: right;">Share (%)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Subgoal entry</td>
+<td style="text-align: right;">2,829</td>
+<td style="text-align: right;">15.88</td>
+<td style="text-align: right;">44,709</td>
+<td style="text-align: right;">17.23</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Astra intervention</td>
+<td style="text-align: right;">587</td>
+<td style="text-align: right;">3.29</td>
+<td style="text-align: right;">12,752</td>
+<td style="text-align: right;">4.91</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Automatic VLA continuation</td>
+<td style="text-align: right;">10,014</td>
+<td style="text-align: right;">56.20</td>
+<td style="text-align: right;">142,516</td>
+<td style="text-align: right;">54.93</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">VLA continuation after review</td>
+<td style="text-align: right;">4,390</td>
+<td style="text-align: right;">24.64</td>
+<td style="text-align: right;">59,495</td>
+<td style="text-align: right;">22.93</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Total</td>
+<td style="text-align: right;">17,820</td>
+<td style="text-align: right;">100.00</td>
+<td style="text-align: right;">259,472</td>
+<td style="text-align: right;">100.00</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<h2 id="app:completion-time"><span class="section-number">E</span> Successful-episode execution time</h2>
+<p>Execution time runs from environment readiness to the end of robot
+execution, excluding startup and post-episode review. The pooled row
+summarizes all 777 successful episodes, rather than averaging task
+means. P90 uses linear interpolation between ordered observations.</p>
+<h3 id="interpretation-of-completion-times" class="paragraph-heading">Interpretation of completion times.</h3>
+<p>Across 777 successful episodes, mean completion time is 513.7
+seconds, the median is 390.5 seconds, and the 90th percentile is 1,102.0
+seconds. Task means range from 141.2 seconds on VideoUnmask to 991.8
+seconds on ButtonUnmaskSwap. These measurements include model inference,
+history queries, action execution, and waiting; API load and network
+conditions also affect them. These full-benchmark timing results are
+descriptive and are not intended as controlled efficiency comparisons
+with published systems. The matched StopCube experiment provides a
+controlled comparison of review policies.</p>
+<div class="publication-panel table-panel">
+<div class="caption">
+<p><strong>Table 7.</strong> Completion times for successful episodes.
+All times are seconds.</p>
+</div>
+<div class="table-scroll" tabindex="0" role="region" aria-label="Scrollable report table">
+<table>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Task</th>
+<th style="text-align: right;">Successful episodes</th>
+<th style="text-align: right;">Mean</th>
+<th style="text-align: right;">Median</th>
+<th style="text-align: right;">P90</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">BinFill</td>
+<td style="text-align: right;">48</td>
+<td style="text-align: right;">802.1</td>
+<td style="text-align: right;">800.1</td>
+<td style="text-align: right;">1378.9</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">StopCube</td>
+<td style="text-align: right;">48</td>
+<td style="text-align: right;">416.6</td>
+<td style="text-align: right;">385.1</td>
+<td style="text-align: right;">615.0</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">PickXtimes</td>
+<td style="text-align: right;">50</td>
+<td style="text-align: right;">712.2</td>
+<td style="text-align: right;">602.6</td>
+<td style="text-align: right;">1315.3</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">SwingXtimes</td>
+<td style="text-align: right;">48</td>
+<td style="text-align: right;">887.3</td>
+<td style="text-align: right;">913.3</td>
+<td style="text-align: right;">1340.5</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">ButtonUnmask</td>
+<td style="text-align: right;">50</td>
+<td style="text-align: right;">359.0</td>
+<td style="text-align: right;">267.4</td>
+<td style="text-align: right;">726.2</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">VideoUnmask</td>
+<td style="text-align: right;">50</td>
+<td style="text-align: right;">141.2</td>
+<td style="text-align: right;">111.5</td>
+<td style="text-align: right;">237.1</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">VideoUnmaskSwap</td>
+<td style="text-align: right;">49</td>
+<td style="text-align: right;">383.5</td>
+<td style="text-align: right;">288.8</td>
+<td style="text-align: right;">690.5</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">ButtonUnmaskSwap</td>
+<td style="text-align: right;">46</td>
+<td style="text-align: right;">991.8</td>
+<td style="text-align: right;">916.6</td>
+<td style="text-align: right;">1319.7</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">PickHighlight</td>
+<td style="text-align: right;">50</td>
+<td style="text-align: right;">385.1</td>
+<td style="text-align: right;">352.6</td>
+<td style="text-align: right;">610.3</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">VideoRepick</td>
+<td style="text-align: right;">50</td>
+<td style="text-align: right;">782.9</td>
+<td style="text-align: right;">645.0</td>
+<td style="text-align: right;">1239.5</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">VideoPlaceButton</td>
+<td style="text-align: right;">49</td>
+<td style="text-align: right;">306.7</td>
+<td style="text-align: right;">281.4</td>
+<td style="text-align: right;">413.3</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">VideoPlaceOrder</td>
+<td style="text-align: right;">45</td>
+<td style="text-align: right;">254.1</td>
+<td style="text-align: right;">244.3</td>
+<td style="text-align: right;">341.0</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">MoveCube</td>
+<td style="text-align: right;">50</td>
+<td style="text-align: right;">296.2</td>
+<td style="text-align: right;">160.8</td>
+<td style="text-align: right;">690.7</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">InsertPeg</td>
+<td style="text-align: right;">45</td>
+<td style="text-align: right;">760.1</td>
+<td style="text-align: right;">719.6</td>
+<td style="text-align: right;">1150.8</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">PatternLock</td>
+<td style="text-align: right;">50</td>
+<td style="text-align: right;">249.5</td>
+<td style="text-align: right;">224.4</td>
+<td style="text-align: right;">461.0</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">RouteStick</td>
+<td style="text-align: right;">49</td>
+<td style="text-align: right;">544.1</td>
+<td style="text-align: right;">494.0</td>
+<td style="text-align: right;">880.1</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Overall / pooled</td>
+<td style="text-align: right;">777</td>
+<td style="text-align: right;">513.7</td>
+<td style="text-align: right;">390.5</td>
+<td style="text-align: right;">1,102.0</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<h2 id="monitor-selection-and-resource-use"><span class="section-number">F</span> Monitor selection and resource use</h2>
+<p>Monitor selection is counted once per execution interval, across
+3,541 intervals. Several monitors may be selected together, so selection
+shares need not sum to 100%. No optional monitor is selected in 1,840
+intervals (51.96%); budgets and mandatory termination conditions still
+apply. Trigger frequency counts intervals ending with a detected
+condition and does not measure error-detection accuracy.</p>
+<div class="publication-panel table-panel">
+<div class="caption">
+<p><strong>Table 8.</strong> Monitor selection and subsequent
+triggering. The 28 direction triggers all concern proposed motion; none
+comes from measured directional displacement.</p>
+</div>
+<div class="table-scroll" tabindex="0" role="region" aria-label="Scrollable report table">
+<table>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Monitor</th>
+<th style="text-align: right;">Selected</th>
+<th style="text-align: right;">Share (%)</th>
+<th style="text-align: right;">Triggered / selected (%)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Before gripper-command switch</td>
+<td style="text-align: right;">1,062</td>
+<td style="text-align: right;">29.99</td>
+<td style="text-align: right;">28.91</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Measured gripper-width change</td>
+<td style="text-align: right;">354</td>
+<td style="text-align: right;">10.00</td>
+<td style="text-align: right;">70.34</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Selected-direction displacement</td>
+<td style="text-align: right;">244</td>
+<td style="text-align: right;">6.89</td>
+<td style="text-align: right;">11.48</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Stationary motion</td>
+<td style="text-align: right;">120</td>
+<td style="text-align: right;">3.39</td>
+<td style="text-align: right;">0.00</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p>Selection differs by task stage. On StopCube, all 51
+button-preparation intervals omit optional monitors, whereas 56 of 85
+stationary-waiting intervals select a direction monitor. On SwingXtimes,
+a pre-command gripper monitor is selected in 186 of 193 target-movement
+intervals (96.37%), compared with 22 of 93 grasping intervals (23.66%).
+On PickXtimes, the stationary-motion monitor is selected in 49 of 50
+button-stop intervals, yet it never triggers across the evaluation.</p>
+<div class="publication-panel table-panel">
+<div class="caption">
+<p><strong>Table 9.</strong> Mean recorded token usage per evaluated
+episode, over all 800 episodes. Cached input is a subset of input.</p>
+</div>
+<div class="table-scroll" tabindex="0" role="region" aria-label="Scrollable report table">
+<table>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Tokens</th>
+<th style="text-align: right;">Execution</th>
+<th style="text-align: right;">Post-episode review</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Input</td>
+<td style="text-align: right;">1,790,701.2</td>
+<td style="text-align: right;">318,456.8</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Cached input</td>
+<td style="text-align: right;">1,633,224.3</td>
+<td style="text-align: right;">308,963.6</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Uncached input</td>
+<td style="text-align: right;">157,476.9</td>
+<td style="text-align: right;">9,493.2</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Output</td>
+<td style="text-align: right;">2,724.9</td>
+<td style="text-align: right;">674.2</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p>All 19,061 successful API responses include usage records, while 112
+failed attempts have unknown usage, giving 99.4% coverage. Reported
+per-episode means use recorded usage divided by all 800 episodes and may
+underestimate actual token consumption. They should not be interpreted
+as billing estimates.</p>
+<h2 id="app:case-sequences"><span class="section-number">G</span> Within-episode case sequences</h2>
+<p>Figure <a href="#fig:within-episode-cases">6</a> expands the
+cross-episode examples in Figures <a href="#fig:trace">4</a> and <a
+href="#fig:history-case">5</a> with two frames from the same episode in
+each pair.</p>
+<div class="publication-panel figure-panel">
+<div class="mini-panel">
+<p>(a) PickXtimes / episode 2</p>
+<div class="mini-panel">
+<a class="zoom-image" href="../assets/images/PickXtimes-ep2-f288-front.png" data-zoom aria-label="Enlarge PickXtimes ep2 f288 front"><img src="../assets/images/PickXtimes-ep2-f288-front.png" loading="lazy" alt="PickXtimes ep2 f288 front"></a>
+<p>Frame 288</p>
+<p>Budget exhausted; review</p>
+</div>
+<div class="mini-panel">
+<a class="zoom-image" href="../assets/images/PickXtimes-ep2-f301-front.png" data-zoom aria-label="Enlarge PickXtimes ep2 f301 front"><img src="../assets/images/PickXtimes-ep2-f301-front.png" loading="lazy" alt="PickXtimes ep2 f301 front"></a>
+<p>Frame 301</p>
+<p>Official success</p>
+</div>
+<p><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>16</mn><mo>+</mo><mn>16</mn><mo>+</mo><mn>16</mn><mo>+</mo><mn>12</mn><mo>=</mo><mn>60</mn></mrow><annotation encoding="application/x-tex">16+16+16+12=60</annotation></semantics></math>
+steps
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mo>→</mo><annotation encoding="application/x-tex">\rightarrow</annotation></semantics></math>
+review</p>
+<p>Another 13 control steps
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mo>→</mo><annotation encoding="application/x-tex">\rightarrow</annotation></semantics></math>
+success</p>
+</div>
+<div class="mini-panel">
+<p>(b) VideoPlaceButton / episode 3</p>
+<div class="mini-panel">
+<a class="zoom-image" href="../assets/images/VideoPlaceButton-ep3-f679-front.png" data-zoom aria-label="Enlarge VideoPlaceButton ep3 f679 front"><img src="../assets/images/VideoPlaceButton-ep3-f679-front.png" loading="lazy" alt="VideoPlaceButton ep3 f679 front"></a>
+<p>Frame 679</p>
+<p>Before the late swap</p>
+</div>
+<div class="mini-panel">
+<a class="zoom-image" href="../assets/images/VideoPlaceButton-ep3-f700-front.png" data-zoom aria-label="Enlarge VideoPlaceButton ep3 f700 front"><img src="../assets/images/VideoPlaceButton-ep3-f700-front.png" loading="lazy" alt="VideoPlaceButton ep3 f700 front"></a>
+<p>Frame 700</p>
+<p>After the late swap</p>
+</div>
+<p>Late changes in ring positions</p>
+<p>Both frames inspected after failure</p>
+</div>
+<div class="caption">
+<p><strong>Figure 6.</strong> Two within-episode sequences, read left to
+right within each pair. (a) Astra reviews execution after the revised
+60-step budget and permits another chunk; official feedback reports
+success after 13 further steps. (b) Historical frames show the late ring
+permutation examined during post-episode review. The pairs document
+execution and historical evidence, respectively.</p>
+</div>
+<span class="reference-anchor" id="fig:within-episode-cases"></span>
+</div>
+<h2 id="app:failure-analysis"><span class="section-number">H</span> Failure annotation and reference-frame clarification</h2>
+<p>Manual inspection of the 23 unsuccessful episodes assigns one primary
+label per episode: historical interpretation (8), subgoal grounding (1),
+execution (9), or review and recovery (5). The execution category
+includes two SwingXtimes episodes in which the motion does not fully
+reach the target and one VideoUnmaskSwap episode with insufficient
+container lift. Each episode is counted once according to its primary
+failure mode.</p>
+<p>In the first RouteStick episode, Astra misinterprets the task’s
+left–right convention, leading to an incorrect directional subgoal. As
+RoboMME’s directional instructions do not explicitly specify the
+reference frame, we subsequently added a clarification of this
+convention to the agent’s global experience context: task directions
+refer to the initial wrist view or initial robot orientation, rather
+than the changing wrist orientation or the front-view screen axes. Image
+points retain the pixel coordinates of their own camera. This interface
+clarification is not counted among the 37 autonomous experience
+updates.</p>
+<div class="publication-panel figure-panel">
+<p>(a) VideoPlaceOrder / episode 11</p>
+<div class="case-frame">
+<a class="zoom-image" href="../assets/images/VideoPlaceOrder-ep11-f491-front.png" data-zoom aria-label="Enlarge VideoPlaceOrder ep11 f491 front"><img src="../assets/images/VideoPlaceOrder-ep11-f491-front.png" loading="lazy" alt="VideoPlaceOrder ep11 f491 front"></a>
+<p>Frame 491: remembered location</p>
+<p>Target initially at the lower right</p>
+</div>
+<div class="case-frame">
+<a class="zoom-image" href="../assets/images/VideoPlaceOrder-ep11-f740-front.png" data-zoom aria-label="Enlarge VideoPlaceOrder ep11 f740 front"><img src="../assets/images/VideoPlaceOrder-ep11-f740-front.png" loading="lazy" alt="VideoPlaceOrder ep11 f740 front"></a>
+<p>Frame 740: late permutation</p>
+<p>Inspected retrospectively</p>
+</div>
+<div class="case-frame">
+<a class="zoom-image" href="../assets/images/VideoPlaceOrder-ep11-f1012-front.png" data-zoom aria-label="Enlarge VideoPlaceOrder ep11 f1012 front"><img src="../assets/images/VideoPlaceOrder-ep11-f1012-front.png" loading="lazy" alt="VideoPlaceOrder ep11 f1012 front"></a>
+<p>Frame 1012: incorrect selection</p>
+<p>Old screen location reused</p>
+</div>
+<p>(b) ButtonUnmaskSwap / episode 17</p>
+<div class="case-frame">
+<a class="zoom-image" href="../assets/images/ButtonUnmaskSwap-ep17-f98-front.png" data-zoom aria-label="Enlarge ButtonUnmaskSwap ep17 f98 front"><img src="../assets/images/ButtonUnmaskSwap-ep17-f98-front.png" loading="lazy" alt="ButtonUnmaskSwap ep17 f98 front"></a>
+<p>Frame 98: brief button contact</p>
+<p>First button press</p>
+</div>
+<div class="case-frame">
+<a class="zoom-image" href="../assets/images/ButtonUnmaskSwap-ep17-f218-front.png" data-zoom aria-label="Enlarge ButtonUnmaskSwap ep17 f218 front"><img src="../assets/images/ButtonUnmaskSwap-ep17-f218-front.png" loading="lazy" alt="ButtonUnmaskSwap ep17 f218 front"></a>
+<p>Frame 218: premature transition</p>
+<p>Container manipulation begins</p>
+</div>
+<div class="case-frame">
+<a class="zoom-image" href="../assets/images/ButtonUnmaskSwap-ep17-f612-front.png" data-zoom aria-label="Enlarge ButtonUnmaskSwap ep17 f612 front"><img src="../assets/images/ButtonUnmaskSwap-ep17-f612-front.png" loading="lazy" alt="ButtonUnmaskSwap ep17 f612 front"></a>
+<p>Frame 612: delayed recovery</p>
+<p>Button action revisited</p>
+</div>
+<p>(c) InsertPeg / episode 0</p>
+<div class="case-frame">
+<a class="zoom-image" href="../assets/images/InsertPeg-ep0-f441-front.png" data-zoom aria-label="Enlarge InsertPeg ep0 f441 front"><img src="../assets/images/InsertPeg-ep0-f441-front.png" loading="lazy" alt="InsertPeg ep0 f441 front"></a>
+<p>Frame 441: incorrect transport</p>
+<p>Direction monitor triggers review</p>
+</div>
+<div class="case-frame">
+<a class="zoom-image" href="../assets/images/InsertPeg-ep0-f633-front.png" data-zoom aria-label="Enlarge InsertPeg ep0 f633 front"><img src="../assets/images/InsertPeg-ep0-f633-front.png" loading="lazy" alt="InsertPeg ep0 f633 front"></a>
+<p>Frame 633: alignment attempts</p>
+<p>Contact recovery remains unsuccessful</p>
+</div>
+<div class="case-frame">
+<a class="zoom-image" href="../assets/images/InsertPeg-ep0-f723-front.png" data-zoom aria-label="Enlarge InsertPeg ep0 f723 front"><img src="../assets/images/InsertPeg-ep0-f723-front.png" loading="lazy" alt="InsertPeg ep0 f723 front"></a>
+<p>Frame 723: incomplete insertion</p>
+<p>Episode ends without completion</p>
+</div>
+<div class="caption">
+<p><strong>Figure 7.</strong> Representative failures, read left to
+right within each episode. (a) VideoPlaceOrder loses target identity
+through a late ring swap; frame 740 was inspected retrospectively. (b)
+ButtonUnmaskSwap moves to container manipulation too early and later
+retries the button. (c) InsertPeg remains incomplete after repeated
+alignment and contact recovery.</p>
+</div>
+<span class="reference-anchor" id="fig:failures"></span>
+</div>
+<h2 id="app:paired"><span class="section-number">I</span> Review-policy comparison</h2>
+<p>The StopCube comparison uses ten official test seeds, with both
+policies rerun under the same harness configuration. The two conditions
+receive identical saved versions of the experience store within each
+pair. Experience updates are disabled to keep the comparison focused on
+review policy. Runs alternate which policy executes first.</p>
+<p>Delegation is faster on all nine jointly successful seeds, saving a
+mean of 227.6 seconds. The first per-chunk run includes 35.5 seconds of
+VLA inference, compared with 2.3 seconds for its delegated counterpart.
+Excluding this pair leaves eight joint successes with mean times of
+491.9 and 280.6 seconds, respectively, a 43.0% reduction. Across all ten
+runs, execution uses 2,021 control steps with per-chunk review and 2,010
+with delegation. Input-token totals fall from 30.63 to 12.05 million;
+uncached input falls from 2.22 to 1.19 million, and output from 32,222
+to 21,333 tokens.</p>
+</main></div>
+<footer class="site-footer"><a href="../">Astra–VLA Harness</a><span>Memory-dependent manipulation · RoboMME</span><a href="#report-content">Back to top ↑</a></footer>
+<dialog class="image-dialog" aria-label="Expanded figure"><form method="dialog"><button aria-label="Close expanded figure">Close ×</button></form><img alt=""></dialog>
+</body></html>

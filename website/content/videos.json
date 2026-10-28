@@ -1,0 +1,466 @@
+[
+  {
+    "slug": "stopcube-ep34",
+    "task": "StopCube",
+    "suite": "Counting",
+    "description": "Time the button press using the cube\u2019s past crossings.",
+    "goal": "press the button to stop the cube exactly at the target on its third visit",
+    "episode": 34,
+    "outcome": "success",
+    "fps": 20,
+    "frames": 306,
+    "duration": 15.3,
+    "interventions": 3,
+    "chapters": [
+      {
+        "time": 0.0,
+        "frame": 0,
+        "mode": "reset",
+        "label": "Reset / demonstration"
+      },
+      {
+        "time": 0.05,
+        "frame": 1,
+        "mode": "delegation",
+        "label": "Delegation begins"
+      },
+      {
+        "time": 0.85,
+        "frame": 17,
+        "mode": "automatic",
+        "label": "Automatic continuation"
+      },
+      {
+        "time": 2.55,
+        "frame": 51,
+        "mode": "review",
+        "label": "Per-chunk review"
+      },
+      {
+        "time": 14.75,
+        "frame": 295,
+        "mode": "intervention",
+        "label": "Direct intervention"
+      }
+    ],
+    "segments": [
+      {
+        "time": 0.0,
+        "frame": 0,
+        "mode": "reset",
+        "label": "Reset / demonstration"
+      },
+      {
+        "time": 0.05,
+        "frame": 1,
+        "mode": "delegation",
+        "label": "Delegation begins"
+      },
+      {
+        "time": 0.85,
+        "frame": 17,
+        "mode": "automatic",
+        "label": "Automatic continuation"
+      },
+      {
+        "time": 2.55,
+        "frame": 51,
+        "mode": "review",
+        "label": "Per-chunk review"
+      },
+      {
+        "time": 3.35,
+        "frame": 67,
+        "mode": "delegation",
+        "label": "Delegation begins"
+      },
+      {
+        "time": 4.15,
+        "frame": 83,
+        "mode": "automatic",
+        "label": "Automatic continuation"
+      },
+      {
+        "time": 9.35,
+        "frame": 187,
+        "mode": "delegation",
+        "label": "Delegation begins"
+      },
+      {
+        "time": 10.15,
+        "frame": 203,
+        "mode": "automatic",
+        "label": "Automatic continuation"
+      },
+      {
+        "time": 13.35,
+        "frame": 267,
+        "mode": "review",
+        "label": "Per-chunk review"
+      },
+      {
+        "time": 14.75,
+        "frame": 295,
+        "mode": "intervention",
+        "label": "Direct intervention"
+      }
+    ]
+  },
+  {
+    "slug": "videounmaskswap-ep44",
+    "task": "VideoUnmaskSwap",
+    "suite": "Permanence",
+    "description": "Track a hidden target through container swaps.",
+    "goal": "watch the video carefully, then pick up the container hiding the red cube, finally pick up another container hiding the green cube",
+    "episode": 44,
+    "outcome": "success",
+    "fps": 20,
+    "frames": 478,
+    "duration": 23.9,
+    "interventions": 1,
+    "chapters": [
+      {
+        "time": 0.0,
+        "frame": 0,
+        "mode": "reset",
+        "label": "Reset / demonstration"
+      },
+      {
+        "time": 8.45,
+        "frame": 169,
+        "mode": "delegation",
+        "label": "Delegation begins"
+      },
+      {
+        "time": 9.25,
+        "frame": 185,
+        "mode": "automatic",
+        "label": "Automatic continuation"
+      },
+      {
+        "time": 15.75,
+        "frame": 315,
+        "mode": "intervention",
+        "label": "Direct intervention"
+      },
+      {
+        "time": 16.35,
+        "frame": 327,
+        "mode": "review",
+        "label": "Per-chunk review"
+      }
+    ],
+    "segments": [
+      {
+        "time": 0.0,
+        "frame": 0,
+        "mode": "reset",
+        "label": "Reset / demonstration"
+      },
+      {
+        "time": 8.45,
+        "frame": 169,
+        "mode": "delegation",
+        "label": "Delegation begins"
+      },
+      {
+        "time": 9.25,
+        "frame": 185,
+        "mode": "automatic",
+        "label": "Automatic continuation"
+      },
+      {
+        "time": 13.45,
+        "frame": 269,
+        "mode": "delegation",
+        "label": "Delegation begins"
+      },
+      {
+        "time": 14.25,
+        "frame": 285,
+        "mode": "automatic",
+        "label": "Automatic continuation"
+      },
+      {
+        "time": 14.95,
+        "frame": 299,
+        "mode": "delegation",
+        "label": "Delegation begins"
+      },
+      {
+        "time": 15.75,
+        "frame": 315,
+        "mode": "intervention",
+        "label": "Direct intervention"
+      },
+      {
+        "time": 16.35,
+        "frame": 327,
+        "mode": "review",
+        "label": "Per-chunk review"
+      },
+      {
+        "time": 17.15,
+        "frame": 343,
+        "mode": "delegation",
+        "label": "Delegation begins"
+      },
+      {
+        "time": 17.95,
+        "frame": 359,
+        "mode": "automatic",
+        "label": "Automatic continuation"
+      },
+      {
+        "time": 22.15,
+        "frame": 443,
+        "mode": "delegation",
+        "label": "Delegation begins"
+      },
+      {
+        "time": 22.95,
+        "frame": 459,
+        "mode": "automatic",
+        "label": "Automatic continuation"
+      }
+    ]
+  },
+  {
+    "slug": "videorepick-ep3",
+    "task": "VideoRepick",
+    "suite": "Reference",
+    "description": "Recall which object was picked in the demonstration.",
+    "goal": "watch the video carefully, then pick up the same cube that was previously picked up again, finally press the button to stop",
+    "episode": 3,
+    "outcome": "success",
+    "fps": 20,
+    "frames": 520,
+    "duration": 26.0,
+    "interventions": 1,
+    "chapters": [
+      {
+        "time": 0.0,
+        "frame": 0,
+        "mode": "reset",
+        "label": "Reset / demonstration"
+      },
+      {
+        "time": 10.0,
+        "frame": 200,
+        "mode": "delegation",
+        "label": "Delegation begins"
+      },
+      {
+        "time": 10.8,
+        "frame": 216,
+        "mode": "automatic",
+        "label": "Automatic continuation"
+      },
+      {
+        "time": 15.0,
+        "frame": 300,
+        "mode": "intervention",
+        "label": "Direct intervention"
+      }
+    ],
+    "segments": [
+      {
+        "time": 0.0,
+        "frame": 0,
+        "mode": "reset",
+        "label": "Reset / demonstration"
+      },
+      {
+        "time": 10.0,
+        "frame": 200,
+        "mode": "delegation",
+        "label": "Delegation begins"
+      },
+      {
+        "time": 10.8,
+        "frame": 216,
+        "mode": "automatic",
+        "label": "Automatic continuation"
+      },
+      {
+        "time": 15.0,
+        "frame": 300,
+        "mode": "intervention",
+        "label": "Direct intervention"
+      },
+      {
+        "time": 16.75,
+        "frame": 335,
+        "mode": "delegation",
+        "label": "Delegation begins"
+      },
+      {
+        "time": 17.55,
+        "frame": 351,
+        "mode": "automatic",
+        "label": "Automatic continuation"
+      },
+      {
+        "time": 18.35,
+        "frame": 367,
+        "mode": "delegation",
+        "label": "Delegation begins"
+      },
+      {
+        "time": 19.15,
+        "frame": 383,
+        "mode": "automatic",
+        "label": "Automatic continuation"
+      },
+      {
+        "time": 19.85,
+        "frame": 397,
+        "mode": "delegation",
+        "label": "Delegation begins"
+      },
+      {
+        "time": 20.65,
+        "frame": 413,
+        "mode": "automatic",
+        "label": "Automatic continuation"
+      },
+      {
+        "time": 22.35,
+        "frame": 447,
+        "mode": "delegation",
+        "label": "Delegation begins"
+      },
+      {
+        "time": 23.15,
+        "frame": 463,
+        "mode": "automatic",
+        "label": "Automatic continuation"
+      }
+    ]
+  },
+  {
+    "slug": "insertpeg-ep45",
+    "task": "InsertPeg",
+    "suite": "Imitation",
+    "description": "Recall the demonstrated grasp and insertion side.",
+    "goal": "watch the video carefully, then grasp the same peg at the same end and insert it into the same side of the box as in the video",
+    "episode": 45,
+    "outcome": "success",
+    "fps": 20,
+    "frames": 471,
+    "duration": 23.55,
+    "interventions": 1,
+    "chapters": [
+      {
+        "time": 0.0,
+        "frame": 0,
+        "mode": "reset",
+        "label": "Reset / demonstration"
+      },
+      {
+        "time": 11.95,
+        "frame": 239,
+        "mode": "delegation",
+        "label": "Delegation begins"
+      },
+      {
+        "time": 12.75,
+        "frame": 255,
+        "mode": "automatic",
+        "label": "Automatic continuation"
+      },
+      {
+        "time": 15.15,
+        "frame": 303,
+        "mode": "review",
+        "label": "Per-chunk review"
+      },
+      {
+        "time": 22.3,
+        "frame": 446,
+        "mode": "intervention",
+        "label": "Direct intervention"
+      }
+    ],
+    "segments": [
+      {
+        "time": 0.0,
+        "frame": 0,
+        "mode": "reset",
+        "label": "Reset / demonstration"
+      },
+      {
+        "time": 11.95,
+        "frame": 239,
+        "mode": "delegation",
+        "label": "Delegation begins"
+      },
+      {
+        "time": 12.75,
+        "frame": 255,
+        "mode": "automatic",
+        "label": "Automatic continuation"
+      },
+      {
+        "time": 15.15,
+        "frame": 303,
+        "mode": "review",
+        "label": "Per-chunk review"
+      },
+      {
+        "time": 15.95,
+        "frame": 319,
+        "mode": "delegation",
+        "label": "Delegation begins"
+      },
+      {
+        "time": 16.75,
+        "frame": 335,
+        "mode": "automatic",
+        "label": "Automatic continuation"
+      },
+      {
+        "time": 17.45,
+        "frame": 349,
+        "mode": "delegation",
+        "label": "Delegation begins"
+      },
+      {
+        "time": 18.25,
+        "frame": 365,
+        "mode": "automatic",
+        "label": "Automatic continuation"
+      },
+      {
+        "time": 18.95,
+        "frame": 379,
+        "mode": "delegation",
+        "label": "Delegation begins"
+      },
+      {
+        "time": 19.75,
+        "frame": 395,
+        "mode": "automatic",
+        "label": "Automatic continuation"
+      },
+      {
+        "time": 20.95,
+        "frame": 419,
+        "mode": "review",
+        "label": "Per-chunk review"
+      },
+      {
+        "time": 22.3,
+        "frame": 446,
+        "mode": "intervention",
+        "label": "Direct intervention"
+      },
+      {
+        "time": 23.3,
+        "frame": 466,
+        "mode": "review",
+        "label": "Per-chunk review"
+      }
+    ]
+  }
+]

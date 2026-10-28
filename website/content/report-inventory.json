@@ -1,0 +1,300 @@
+{
+  "headings": [
+    {
+      "id": "sec:introduction",
+      "title": "Introduction",
+      "number": "1",
+      "level": 2
+    },
+    {
+      "id": "sec:related",
+      "title": "Related work",
+      "number": "2",
+      "level": 2
+    },
+    {
+      "id": "foundation-models-for-robot-control",
+      "title": "Foundation models for robot control.",
+      "number": "",
+      "level": 3
+    },
+    {
+      "id": "hierarchical-execution-and-feedback",
+      "title": "Hierarchical execution and feedback.",
+      "number": "",
+      "level": 3
+    },
+    {
+      "id": "task-memory-and-experience-reuse",
+      "title": "Task memory and experience reuse.",
+      "number": "",
+      "level": 3
+    },
+    {
+      "id": "sec:harness",
+      "title": "Harness",
+      "number": "3",
+      "level": 2
+    },
+    {
+      "id": "system-and-task-context",
+      "title": "System and task context",
+      "number": "3.1",
+      "level": 3
+    },
+    {
+      "id": "grounded-subgoals",
+      "title": "Grounded subgoals",
+      "number": "3.2",
+      "level": 3
+    },
+    {
+      "id": "execution-delegation-and-recovery",
+      "title": "Execution delegation and recovery",
+      "number": "3.3",
+      "level": 3
+    },
+    {
+      "id": "cross-episode-experience-evolution",
+      "title": "Cross-episode experience evolution",
+      "number": "3.4",
+      "level": 3
+    },
+    {
+      "id": "sec:setup",
+      "title": "Experimental setup",
+      "number": "4",
+      "level": 2
+    },
+    {
+      "id": "benchmark-and-adaptation",
+      "title": "Benchmark and adaptation.",
+      "number": "",
+      "level": 3
+    },
+    {
+      "id": "observation-access",
+      "title": "Observation access.",
+      "number": "",
+      "level": 3
+    },
+    {
+      "id": "comparisons",
+      "title": "Comparisons.",
+      "number": "",
+      "level": 3
+    },
+    {
+      "id": "measurements",
+      "title": "Measurements.",
+      "number": "",
+      "level": 3
+    },
+    {
+      "id": "sec:results",
+      "title": "Results and analysis",
+      "number": "5",
+      "level": 2
+    },
+    {
+      "id": "task-performance",
+      "title": "Task performance",
+      "number": "5.1",
+      "level": 3
+    },
+    {
+      "id": "supervision-and-execution-efficiency",
+      "title": "Supervision and execution efficiency",
+      "number": "5.2",
+      "level": 3
+    },
+    {
+      "id": "matched-review-policy-comparison",
+      "title": "Matched review-policy comparison.",
+      "number": "",
+      "level": 4
+    },
+    {
+      "id": "execution-and-experience-analysis",
+      "title": "Execution and experience analysis",
+      "number": "5.3",
+      "level": 3
+    },
+    {
+      "id": "revising-execution-advice",
+      "title": "Revising execution advice.",
+      "number": "",
+      "level": 4
+    },
+    {
+      "id": "revising-historical-interpretation",
+      "title": "Revising historical interpretation.",
+      "number": "",
+      "level": 4
+    },
+    {
+      "id": "failure-analysis",
+      "title": "Failure analysis",
+      "number": "5.4",
+      "level": 3
+    },
+    {
+      "id": "discussion-and-limitations",
+      "title": "Discussion and limitations",
+      "number": "6",
+      "level": 2
+    },
+    {
+      "id": "conclusion",
+      "title": "Conclusion",
+      "number": "7",
+      "level": 2
+    },
+    {
+      "id": "app:configuration",
+      "title": "Experimental settings",
+      "number": "A",
+      "level": 2
+    },
+    {
+      "id": "robot-state-monitors",
+      "title": "Robot-state monitors.",
+      "number": "",
+      "level": 3
+    },
+    {
+      "id": "app:task-results",
+      "title": "Per-task performance and execution allocation",
+      "number": "B",
+      "level": 2
+    },
+    {
+      "id": "app:interfaces",
+      "title": "Interface and experience details",
+      "number": "C",
+      "level": 2
+    },
+    {
+      "id": "observation-provenance",
+      "title": "Observation provenance.",
+      "number": "",
+      "level": 3
+    },
+    {
+      "id": "grounding",
+      "title": "Grounding.",
+      "number": "",
+      "level": 3
+    },
+    {
+      "id": "control-steps-and-duration-priors",
+      "title": "Control steps and duration priors.",
+      "number": "",
+      "level": 3
+    },
+    {
+      "id": "experience-validation-and-applicability",
+      "title": "Experience validation and applicability.",
+      "number": "",
+      "level": 3
+    },
+    {
+      "id": "app:measurements",
+      "title": "Measurement definitions",
+      "number": "D",
+      "level": 2
+    },
+    {
+      "id": "app:completion-time",
+      "title": "Successful-episode execution time",
+      "number": "E",
+      "level": 2
+    },
+    {
+      "id": "interpretation-of-completion-times",
+      "title": "Interpretation of completion times.",
+      "number": "",
+      "level": 3
+    },
+    {
+      "id": "monitor-selection-and-resource-use",
+      "title": "Monitor selection and resource use",
+      "number": "F",
+      "level": 2
+    },
+    {
+      "id": "app:case-sequences",
+      "title": "Within-episode case sequences",
+      "number": "G",
+      "level": 2
+    },
+    {
+      "id": "app:failure-analysis",
+      "title": "Failure annotation and reference-frame clarification",
+      "number": "H",
+      "level": 2
+    },
+    {
+      "id": "app:paired",
+      "title": "Review-policy comparison",
+      "number": "I",
+      "level": 2
+    }
+  ],
+  "figures": 7,
+  "tables": 9,
+  "equations": 3,
+  "images": [
+    "teaser.pdf",
+    "architecture.pdf",
+    "task_comparison.pdf",
+    "supplementary/20261023-stopcube/figures/PickXtimes-ep0-f689-front.png",
+    "supplementary/20261023-stopcube/figures/PickXtimes-ep1-f284-front.png",
+    "supplementary/20261023-stopcube/figures/PickXtimes-ep2-f288-front.png",
+    "supplementary/20261023-stopcube/figures/VideoPlaceButton-ep3-f700-front.png",
+    "supplementary/20261023-stopcube/figures/VideoPlaceButton-ep4-f501-front.png",
+    "supplementary/20261023-stopcube/figures/VideoPlaceButton-ep10-f1006-front.png",
+    "supplementary/20261023-stopcube/figures/PickXtimes-ep2-f288-front.png",
+    "supplementary/20261023-stopcube/figures/PickXtimes-ep2-f301-front.png",
+    "supplementary/20261023-stopcube/figures/VideoPlaceButton-ep3-f679-front.png",
+    "supplementary/20261023-stopcube/figures/VideoPlaceButton-ep3-f700-front.png",
+    "supplementary/20261023-stopcube/figures/VideoPlaceOrder-ep11-f491-front.png",
+    "supplementary/20261023-stopcube/figures/VideoPlaceOrder-ep11-f740-front.png",
+    "supplementary/20261023-stopcube/figures/VideoPlaceOrder-ep11-f1012-front.png",
+    "supplementary/20261023-stopcube/figures/ButtonUnmaskSwap-ep17-f98-front.png",
+    "supplementary/20261023-stopcube/figures/ButtonUnmaskSwap-ep17-f218-front.png",
+    "supplementary/20261023-stopcube/figures/ButtonUnmaskSwap-ep17-f612-front.png",
+    "supplementary/20261023-stopcube/figures/InsertPeg-ep0-f441-front.png",
+    "supplementary/20261023-stopcube/figures/InsertPeg-ep0-f633-front.png",
+    "supplementary/20261023-stopcube/figures/InsertPeg-ep0-f723-front.png"
+  ],
+  "labels": {
+    "fig:teaser": "1",
+    "sec:introduction": "1",
+    "sec:related": "2",
+    "sec:harness": "3",
+    "fig:architecture": "2",
+    "eq:budget": "1",
+    "sec:setup": "4",
+    "sec:results": "5",
+    "tab:performance": "1",
+    "fig:task-comparison": "3",
+    "tab:allocation": "2",
+    "tab:paired": "3",
+    "fig:trace": "4",
+    "fig:history-case": "5",
+    "app:configuration": "A",
+    "tab:config": "4",
+    "app:task-results": "B",
+    "tab:task-results": "5",
+    "app:interfaces": "C",
+    "app:measurements": "D",
+    "tab:allocation-detail": "6",
+    "app:completion-time": "E",
+    "app:case-sequences": "G",
+    "fig:within-episode-cases": "6",
+    "app:failure-analysis": "H",
+    "fig:failures": "7",
+    "app:paired": "I"
+  }
+}

@@ -1,0 +1,45 @@
+\section{Harness}
+\label{sec:harness}
+\subsection{System and task context}
+The harness connects Astra's task decisions to VLA execution and direct intervention (Figure~\ref{fig:architecture}). At each decision point, Astra receives the task instruction, current front and wrist RGB images, robot state, and a summary of the next action sequence predicted by the VLA. It can query archived observations and consult episode notes. Relevant global and task experience remains available throughout the episode. Forward kinematics is used to estimate the end-effector motion implied by the VLA's predicted joint actions. Episode success is determined by official environment feedback.
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=\linewidth]{architecture.pdf}
+\caption{Astra sets execution budgets and selects monitors while the VLA reacts to new observations. Direct interventions bypass the VLA; post-episode review revises advice for later decisions.}
+\label{fig:architecture}
+\end{figure}
+
+The VLA uses the official RoboMME GroundSG checkpoint and maps its current observation and grounded subgoal to a joint-action sequence. Astra can permit one action chunk, let the VLA execute several chunks before review, or directly specify end-effector targets in world coordinates and gripper commands. Direct intervention bypasses the VLA but acts on the same robot and episode. After a subgoal change or direct intervention, the VLA predicts a new action sequence from the latest observation and current subgoal before execution resumes.
+
+History queries recover evidence absent from the current views, including reset demonstrations and intermediate observations. Astra first samples a requested interval, including its endpoints, then narrows the interval or inspects original frames when necessary. Episode notes retain task-relevant interpretations and unresolved hypotheses with frame references, allowing Astra to revisit their supporting observations when needed. The agent uses task instructions, front and wrist images, and robot state available under standard RoboMME evaluation. It receives no privileged environment information such as ground-truth object states or oracle subgoals.
+
+\subsection{Grounded subgoals}
+A grounded subgoal combines a RoboMME task template, semantic attributes, and target image points \citepending{robomme}. Astra resolves the attributes from history and the current scene; the harness converts normalized points to front-image pixel coordinates and inserts them into the instruction. For example, an InsertPeg grasp specifies the near or far end of the peg and its image location:
+\begin{quote}
+\small\ttfamily\raggedright pick up the peg by grasping the near end at <128, 64>
+\end{quote}
+The coordinates here are illustrative image references. Insertion additionally specifies the left or right side of the box. The VLA receives this grounded instruction with the task instruction, current images, and robot state, matching the representation used in its RoboMME training annotations. Applicable experience can advise target selection or recovery, while Astra judges whether its conditions fit the scene. Experience can therefore influence which subgoal is selected without changing the task requirements or the controller's instruction vocabulary. Appendix~\ref{app:interfaces} gives conversion and validation details.
+
+\subsection{Execution delegation and recovery}
+To avoid unnecessary reviews during routine execution, Astra assigns a finite execution budget based on current observations, task history, and relevant experience. Initial budget advice comes from the number of control steps used to complete subtasks in training demonstrations; the lower quartile of each subtask's duration distribution provides a starting point. Subsequent experience refines these recommendations for particular stages and observed execution difficulties.
+
+Longer execution intervals can be paired with auxiliary monitoring tools. Gripper-state changes, directional displacement beyond a specified threshold, or a lack of end-effector movement can indicate a stage transition or potential execution problem. Astra selects the relevant monitors when assigning a budget. A detected condition prompts visual review, allowing Astra to inspect progress before the full interval ends. These tools let Astra retain longer budgets during routine motion while watching for events that may require attention. Thresholds and implementation details appear in Appendix~\ref{app:configuration}.
+
+The budget counts actual executed control steps. At chunk $j$, let $b_j$ be the remaining budget and $h_j$ the number of predicted actions available for execution. Execution uses
+\begin{equation}
+ \ell_j=\min(16,h_j,b_j),\qquad b_{j+1}=b_j-u_j,
+ \label{eq:budget}
+\end{equation}
+where $\ell_j$ is the number of actions released for execution and $u_j\leq\ell_j$ is the number actually executed, which may be smaller if execution stops early. After executing these steps, the VLA predicts the next action chunk from the latest observations. Thus the controller continues to respond to the scene while Astra reviews at the selected interval or when a monitor triggers.
+
+At a nonterminal review with a valid execution state, Astra compares the new observations with the intended subgoal and relevant history. It can extend execution, choose another subgoal, permit one chunk at a time for close supervision, or intervene directly. For example, an incorrect target may call for another history query and a revised subgoal, whereas a stalled contact motion may call for a local end-effector correction. After intervention, the VLA receives the resulting observation and resumes control under Astra's next decision. Budgeted execution and event-triggered review therefore support both sustained VLA operation and targeted recovery.
+
+\subsection{Cross-episode experience evolution}
+The experience store captures what Astra learns about task interpretation and VLA execution across episodes. Entries pair an observation or recommendation with its applicable conditions and supporting frames. Advice can concern target identification, review intervals, monitoring choices, or recovery. Revisions replace outdated recommendations while preserving their earlier versions. Each episode uses the available global and task-specific experience, and new findings become available to subsequent episodes.
+
+After the episode ends, Astra performs the review in the same agent session. Its inputs include retained interactions and tool responses, episode notes, active experience, and the official outcome and termination status. It can query archived front and wrist images, moving from sparse sampling to closer inspection. Execution records include the selected budgets, the number of steps executed, and the conditions that prompted review. Astra uses these records to identify problematic stages, assess its earlier supervision and recovery decisions, and determine whether the findings should update existing experience.
+
+Astra adds an entry when review identifies a transferable finding, or revises an existing entry when new evidence changes its recommendation or applicable conditions. Findings already covered by the store require no update. For example, hovering observed before a scheduled review can motivate a shorter budget for that phase or the use of a stationary-motion monitor. A recommendation that works for one temporal query can be revised to distinguish before-event and after-event tasks. In this way, experience develops from individual outcomes into conditional guidance for later decisions.
+
+Updates pass structural and scope checks before entering the experience store. Later decisions can cite the relevant entries when choosing a subgoal, review interval, or recovery action, making it possible to trace how past outcomes informed subsequent actions (Section~\ref{sec:results}). Adaptation takes place through this evolving context while the VLA weights remain fixed.

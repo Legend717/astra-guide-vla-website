@@ -1,0 +1,111 @@
+/* Run with: node scripts/browser_check.cjs <playwright module> [browser executable] */
+const { chromium } = require(process.argv[2] || 'playwright');
+const fs = require('node:fs');
+const path = require('node:path');
+const assert = require('node:assert/strict');
+const root = path.resolve(__dirname, '..');
+const base = process.env.SITE_URL || 'http://127.0.0.1:8765/';
+(async () => {
+  const browser = await chromium.launch({headless:true, executablePath:process.argv[3]});
+  const errors = [];
+  const checks = [];
+  const context = await browser.newContext({reducedMotion:'reduce'});
+  const page = await context.newPage();
+  page.on('pageerror', error => errors.push(error.message));
+  const initialRequests = [];
+  page.on('request', request => initialRequests.push(request.url()));
+  try {
+    for (const width of [1440, 768, 375]) {
+      await page.setViewportSize({width, height:1000});
+      await page.goto(base);
+      await page.locator('#video-chapters button').first().waitFor();
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, `Home overflow at ${width}`);
+      await page.screenshot({path:path.join(root,`.cache/home-${width}.png`)});
+      checks.push(`Homepage layout ${width}px`);
+    }
+    assert.equal(initialRequests.some(url=>url.endsWith('.mp4')), false, 'Videos must not preload');
+    checks.push('No MP4 requested before interaction');
+    await page.setViewportSize({width:1440,height:1000});
+    await page.goto(base);
+    await page.locator('#video-chapters button').first().waitFor();
+    const board = page.locator('.mechanism');
+    await board.scrollIntoViewIfNeeded();
+    await page.waitForTimeout(2600);
+    assert.equal(await board.getAttribute('data-phase'),'0','Reduced motion must suppress automatic playback');
+    await page.locator('#motion-next').click();
+    assert.equal(await board.getAttribute('data-phase'), '1');
+    await page.getByRole('button',{name:'Monitor event',exact:true}).click();
+    for(let i=0;i<6;i++) await page.locator('#motion-next').click();
+    assert.equal(await page.locator('#budget-value').textContent(), '64 / 100 controls');
+    assert.match(await page.locator('#phase-caption').textContent(), /earlier review/);
+    await page.locator('#motion-play').click();
+    assert.equal(await page.locator('#motion-play').textContent(), 'Pause both');
+    await page.waitForFunction(()=>document.querySelector('.mechanism').dataset.phase==='7');
+    await page.locator('#motion-play').click();
+    assert.equal(await page.locator('#motion-play').textContent(), 'Play both');
+    await page.waitForTimeout(2600);
+    assert.equal(await board.getAttribute('data-phase'),'7','Pause must freeze the mechanism');
+    await board.screenshot({path:path.join(root,'.cache/mechanism.png')});
+    checks.push('Mechanism next/reset/scenario/play/pause');
+    for (let i=0;i<4;i++) {
+      await page.locator(`[data-video="${i}"]`).click();
+      await page.locator('#video-chapters button').last().click();
+      await page.waitForFunction(()=>{const v=document.getElementById('demo-video');return v.readyState>=2 && v.currentTime>0;});
+      const media = await page.locator('#demo-video').evaluate(video=>({width:video.videoWidth,height:video.videoHeight,time:video.currentTime,duration:video.duration}));
+      assert.equal(media.width,1280);
+      assert.equal(media.height,900);
+      const metadata = JSON.parse(fs.readFileSync(path.join(root,'../docs/assets/videos.json'),'utf8'))[i];
+      assert.ok(Math.abs(media.time-metadata.chapters.at(-1).time)<.15, `Chapter timing ${metadata.task}`);
+      checks.push(`Video decode and exact chapter seek: ${metadata.task}`);
+    }
+    await page.selectOption('#video-speed','1.5');
+    assert.equal(await page.locator('#demo-video').evaluate(v=>v.playbackRate),1.5);
+    await page.locator('.demo-layout').screenshot({path:path.join(root,'.cache/demo.png')});
+    await page.locator('.suite-filter [data-suite="Counting"]').click();
+    assert.equal(await page.locator('#task-table tbody tr:visible').count(),4);
+    await page.locator('.suite-filter [data-suite="all"]').click();
+    assert.equal(await page.locator('#task-table tbody tr:visible').count(),16);
+    checks.push('Result filters and playback speed');
+    await page.goto(base+'report/');
+    assert.equal(await page.locator('.report-content table').count(),9);
+    assert.equal(await page.locator('.report-content h2,.report-content h3,.report-content h4').count(),42);
+    assert.equal(await page.locator('.equation').count(),3);
+    assert.equal(await page.locator('.csl-entry').count(),21);
+    const missingReferences = await page.evaluate(()=>[...document.querySelectorAll('a[href^="#"]')].filter(a=>!document.getElementById(decodeURIComponent(a.hash.slice(1)))).map(a=>a.hash));
+    assert.deepEqual(missingReferences,[]);
+    const badImages=await page.evaluate(async()=>{await Promise.all([...document.images].map(image=>{image.loading='eager';return image.decode().catch(()=>{});}));return [...document.images].filter(i=>i.src && i.closest('dialog')===null && !i.naturalWidth).map(i=>i.src);});
+    assert.deepEqual(badImages,[]);
+    await page.screenshot({path:path.join(root,'.cache/report-desktop.png')});
+    await page.locator('#fig\\:trace').evaluate(anchor=>anchor.parentElement.scrollIntoView());
+    await page.locator('#fig\\:trace').locator('..').screenshot({path:path.join(root,'.cache/report-case.png')});
+    await page.locator('.report-content a[data-zoom]').first().click();
+    assert.equal(await page.locator('dialog').evaluate(d=>d.open),true);
+    await page.keyboard.press('Escape');
+    assert.equal(await page.locator('dialog').evaluate(d=>d.open),false);
+    for (const width of [1440,768,375]) {
+      await page.setViewportSize({width,height:1000});
+      assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,`Report overflow ${width}`);
+    }
+    await page.screenshot({path:path.join(root,'.cache/report-mobile.png')});
+    await page.locator('.report-sidebar summary').click();
+    await page.locator('.report-sidebar a[href="#app:paired"]').click();
+    assert.equal(await page.locator('.report-sidebar details').evaluate(d=>d.open),false);
+    assert.ok(page.url().endsWith('#app:paired'));
+    await page.goBack();
+    await page.goForward();
+    assert.ok(page.url().endsWith('#app:paired'));
+    checks.push('Report tables, headings, equations, references, images, mobile TOC and browser history');
+    const noJS=await browser.newContext({javaScriptEnabled:false,viewport:{width:375,height:900}});
+    const staticPage=await noJS.newPage();
+    await staticPage.goto(base+'report/');
+    assert.equal(await staticPage.locator('.report-content table').count(),9);
+    await staticPage.goto(base);
+    assert.equal(await staticPage.locator('#task-table tbody tr:visible').count(),16);
+    assert.equal(await staticPage.locator('a[data-video]').count(),4);
+    checks.push('Report, table and four video links available without JavaScript');
+    await noJS.close();
+    assert.deepEqual(errors,[]);
+    fs.writeFileSync(path.join(root,'.cache/browser-results.json'),JSON.stringify({checks,errors},null,2));
+    console.log(JSON.stringify({checks,errors},null,2));
+  } finally {await browser.close();}
+})().catch(error=>{console.error(error);process.exitCode=1;});
