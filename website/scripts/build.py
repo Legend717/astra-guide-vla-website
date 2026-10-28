@@ -284,6 +284,8 @@ def build_home():
     scene_defs = re.search(r"<defs>.*?</defs>", teaser, re.S).group(0)
     page = template.replace("{{TASK_ROWS}}", ''.join(rows)).replace("{{VIDEO_TABS}}", cards).replace("{{SCENE_DEFS}}", scene_defs)
     (OUT / "index.html").write_text(page, encoding="utf-8")
+    for name in ["sysu-logo.svg", "tengenx-logo.png"]:
+        shutil.copyfile(SOURCE / "figures" / name, OUT / "assets/images" / name)
     for name in ["site.css", "site.js", "favicon.svg"]:
         shutil.copyfile(ROOT / "templates" / name, OUT / "assets" / name)
     (OUT / ".nojekyll").touch()

@@ -1,4 +1,17 @@
+% 本文参考文献共 21 篇；已于 2026-10-26 按官方来源填写并核对。
+% 下方保留原始检索注释及来源；正式出版版本优先。
+% 将条目第一行的大括号后、第一个逗号前的引用键改为下面指定的 key。
+% 例如，将 article 或 inproceedings 条目的引用键设为 robomme。
+% 只修改引用键；title、author、year 等字段保留来源提供的真实信息。
+% main.tex 已启用 citep、plainnat 和 references。
+% astra-three-tier 当前入口是项目报告；若没有论文 BibTeX，可按网页报告引用。
 
+% ----------------------------------------------------------------------
+% 01. 查找文章：RoboMME: Benchmarking and Understanding Memory for Robotic Generalist Policies
+% 引用键（必须一致）：robomme
+% 查找入口：https://arxiv.org/html/2603.04639v1
+% 本文引用用途：任务定义、四类记忆要求、官方协议；最终基线表须逐项核验该版本。
+% 在下方粘贴 BibTeX：
 % Verified 2026-10-26: https://proceedings.mlr.press/v306/dai26c.html
 @InProceedings{robomme,
   title = 	 {{{R}obo{MME}: Benchmarking and Understanding Memory for Robotic Generalist Policies}},
@@ -19,6 +32,12 @@
 
 
 
+% ----------------------------------------------------------------------
+% 02. 查找文章：Can a Frontier VLM Serve as a Robot Policy for Memory-Dependent Manipulation?
+% 引用键（必须一致）：astra-direct
+% 查找入口：https://arxiv.org/html/2610.17350v1
+% 本文引用用途：Astra 直接 waypoint 控制、历史输入和失败审计；同时作为全文写法参考。
+% 在下方粘贴 BibTeX：
 % Verified 2026-10-26: https://arxiv.org/bibtex/2610.17350
 @misc{astra-direct,
       title={{Can a Frontier VLM Serve as a Robot Policy for Memory-Dependent Manipulation?}}, 
@@ -32,10 +51,17 @@
 
 
 
+% ----------------------------------------------------------------------
+% 03. 查找文章：Can Astra Solve RoboMME without Breaking the Bank?
+% 引用键（必须一致）：astra-three-tier
+% 查找入口：https://bingaochen.github.io/Astra-on-RoboMME/
+% 本文引用用途：Astra + VLA + 微调完成监控模型的近邻系统；目前是项目报告入口，请手动确认最终论文条目或网页引用格式。
+% 在下方粘贴 BibTeX：
 % Verified 2026-10-26: https://bingaochen.github.io/Astra-on-RoboMME/
 @misc{astra-three-tier,
   title = {{Can Astra Solve RoboMME without Breaking the Bank?}},
   author = {Bingao Chen and Haoquan Fang and C. Karen Liu},
+  year = {2026},
   howpublished = {Project report},
   url = {https://bingaochen.github.io/Astra-on-RoboMME/},
   note = {Accessed 2026-10-26}
@@ -43,6 +69,12 @@
 
 
 
+% ----------------------------------------------------------------------
+% 04. 查找文章：PonderPounce: A Pretrained MLLM as an Episode Context Engine for Robot Control
+% 引用键（必须一致）：ponderpounce
+% 查找入口：https://arxiv.org/html/2608.24115v1
+% 本文引用用途：上下文理解与低层控制的分工。
+% 在下方粘贴 BibTeX：
 % Verified 2026-10-26: https://arxiv.org/bibtex/2608.24115
 @misc{ponderpounce,
       title={{PonderPounce: A Pretrained MLLM as an Episode Context Engine for Robot Control}}, 
@@ -56,6 +88,12 @@
 
 
 
+% ----------------------------------------------------------------------
+% 05. 查找文章：MemER: Scaling Up Memory for Robot Control via Experience Retrieval
+% 引用键（必须一致）：memer
+% 查找入口：https://arxiv.org/abs/2510.20328
+% 本文引用用途：经验检索与机器人控制。
+% 在下方粘贴 BibTeX：
 % Verified 2026-10-26: https://jen-pan.github.io/memer/
 @inproceedings{memer,
   title={{MemER: Scaling Up Memory for Robot Control via Experience Retrieval}},
@@ -67,6 +105,12 @@
 
 
 
+% ----------------------------------------------------------------------
+% 06. 查找文章：SimpleMemVLA: A Simple but Effective Native-Video Memory for Vision-Language-Action Models
+% 引用键（必须一致）：simplememvla
+% 查找入口：https://arxiv.org/abs/2609.05533v2
+% 本文引用用途：原生视频上下文作为任务历史记忆；与本文的跨 episode 经验区分。
+% 在下方粘贴 BibTeX：
 % Verified 2026-10-26: https://arxiv.org/bibtex/2609.05533v2
 @misc{simplememvla,
       title={{SimpleMemVLA: A Simple but Effective Native-Video Memory for Vision-Language-Action Models}}, 
@@ -80,7 +124,14 @@
 
 
 
+% ----------------------------------------------------------------------
+% 07. 查找文章：ME-Brain-1.0: Memory, Cognition and Action for Evolving Embodied Intelligence
+% 引用键（必须一致）：mebrain
+% 查找入口：https://arxiv.org/html/2609.24271v1
+% 本文引用用途：更广泛的具身记忆与演化系统背景；不将其完整系统与动作模型成绩混写。
+% 在下方粘贴 BibTeX：
 % Verified 2026-10-26: https://arxiv.org/bibtex/2609.24271v2
+% User selected v2; repeated Jia Shi is retained exactly as exported by arXiv.
 @misc{mebrain,
       title={{ME-Brain-1.0: Memory, Cognition and Action for Evolving Embodied Intelligence}}, 
       author={Wei He and Hengtao Li and Chenfeng Wang and Zhongrui Yu and Xuhan Zhu and Maokui He and Zide Liu and Xiyue Zhang and Xianwei Mao and Chunpeng Zhou and Jia Shi and Yanze Xin and Jingwen Li and Jingxie Zheng and Sijie Zeng and Fan Lu and Zeyu Zhang and Shuai Guo and Hengxuan Zhang and Pengfei Yu and Jia Shi and Yu Liu and Kun Zhan and Yan Xie},
@@ -93,6 +144,12 @@
 
 
 
+% ----------------------------------------------------------------------
+% 08. 查找文章：π0.5: a Vision-Language-Action Model with Open-World Generalization
+% 引用键（必须一致）：pi05
+% 查找入口：https://arxiv.org/abs/2504.16054v1
+% 本文引用用途：低层 VLA 基础模型来源，不用于证明本仓库特定 checkpoint 的表现。
+% 在下方粘贴 BibTeX：
 % Verified 2026-10-26: https://proceedings.mlr.press/v305/black25a.html
 @InProceedings{pi05,
   title = 	 {{$\pi_{0.5}$: a Vision-Language-Action Model with Open-World Generalization}},
@@ -112,6 +169,12 @@
 
 
 
+% ----------------------------------------------------------------------
+% 09. 查找文章：Do As I Can, Not As I Say: Grounding Language in Robotic Affordances
+% 引用键（必须一致）：saycan
+% 查找入口：https://arxiv.org/abs/2204.01691
+% 本文引用用途：使用可供性约束语言模型的技能选择。
+% 在下方粘贴 BibTeX：
 % Verified 2026-10-26: https://proceedings.mlr.press/v205/ichter23a.html
 @InProceedings{saycan,
   title = 	 {{Do As I Can, Not As I Say: Grounding Language in Robotic Affordances}},
@@ -131,11 +194,23 @@
 
 
 
+% ----------------------------------------------------------------------
+% 10. 查找文章：Code as Policies: Language Model Programs for Embodied Control
+% 引用键（必须一致）：code-as-policies
+% 查找入口：https://arxiv.org/abs/2209.07753
+% 本文引用用途：用生成程序连接语言指令与机器人 API。
+% 在下方粘贴 BibTeX：
 % Verified 2026-10-26: https://api.crossref.org/works/10.1109/ICRA48891.2023.10160591
 @inproceedings{code-as-policies, title={Code as Policies: Language Model Programs for Embodied Control}, url={http://dx.doi.org/10.1109/ICRA48891.2023.10160591}, DOI={10.1109/icra48891.2023.10160591}, booktitle={2023 IEEE International Conference on Robotics and Automation (ICRA)}, publisher={IEEE}, author={Liang, Jacky and Huang, Wenlong and Xia, Fei and Xu, Peng and Hausman, Karol and Ichter, Brian and Florence, Pete and Zeng, Andy}, year={2023}, month=May, pages={9493--9500} }
 
 
 
+% ----------------------------------------------------------------------
+% 11. 查找文章：VoxPoser: Composable 3D Value Maps for Robotic Manipulation with Language Models
+% 引用键（必须一致）：voxposer
+% 查找入口：https://arxiv.org/abs/2307.05973
+% 本文引用用途：以空间目标连接语义推理和运动规划。
+% 在下方粘贴 BibTeX：
 % Verified 2026-10-26: https://proceedings.mlr.press/v229/huang23b.html
 @InProceedings{voxposer,
   title = 	 {{VoxPoser: Composable 3D Value Maps for Robotic Manipulation with Language Models}},
@@ -155,6 +230,12 @@
 
 
 
+% ----------------------------------------------------------------------
+% 12. 查找文章：RT-2: Vision-Language-Action Models Transfer Web Knowledge to Robotic Control
+% 引用键（必须一致）：rt2
+% 查找入口：https://arxiv.org/abs/2307.15818
+% 本文引用用途：与 OpenVLA、π0.5 合并支撑学习型 VLA 路线。
+% 在下方粘贴 BibTeX：
 % Verified 2026-10-26: https://proceedings.mlr.press/v229/zitkovich23a.html
 @InProceedings{rt2,
   title = 	 {{RT-2: Vision-Language-Action Models Transfer Web Knowledge to Robotic Control}},
@@ -174,6 +255,12 @@
 
 
 
+% ----------------------------------------------------------------------
+% 13. 查找文章：OpenVLA: An Open-Source Vision-Language-Action Model
+% 引用键（必须一致）：openvla
+% 查找入口：https://arxiv.org/abs/2406.09246
+% 本文引用用途：学习型视觉语言动作模型。
+% 在下方粘贴 BibTeX：
 % Verified 2026-10-26: https://proceedings.mlr.press/v270/kim25c.html
 @InProceedings{openvla,
   title = 	 {{OpenVLA: An Open-Source Vision-Language-Action Model}},
@@ -193,6 +280,12 @@
 
 
 
+% ----------------------------------------------------------------------
+% 14. 查找文章：RoboICL: Embodied In-Context Learning with GPT-6 Astra
+% 引用键（必须一致）：roboicl
+% 查找入口：https://arxiv.org/abs/2609.34261
+% 本文引用用途：示范与交互反馈驱动的部署时上下文学习。
+% 在下方粘贴 BibTeX：
 % Verified 2026-10-26: https://arxiv.org/bibtex/2609.34261
 @misc{roboicl,
       title={{RoboICL: Embodied In-Context Learning with GPT-6 Astra}}, 
@@ -206,6 +299,12 @@
 
 
 
+% ----------------------------------------------------------------------
+% 15. 查找文章：In-Context Robot Learning with VLM Agents
+% 引用键（必须一致）：gpt-policy
+% 查找入口：https://arxiv.org/abs/2609.19138
+% 本文引用用途：GPT-Policy 的上下文、动作工具和执行反馈。
+% 在下方粘贴 BibTeX：
 % Verified 2026-10-26: https://arxiv.org/bibtex/2609.19138
 @misc{gpt-policy,
       title={{In-Context Robot Learning with VLM Agents}}, 
@@ -219,6 +318,12 @@
 
 
 
+% ----------------------------------------------------------------------
+% 16. 查找文章：Inner Monologue: Embodied Reasoning through Planning with Language Models
+% 引用键（必须一致）：inner-monologue
+% 查找入口：https://arxiv.org/abs/2207.05608
+% 本文引用用途：环境反馈进入闭环规划，是监督与恢复的相关背景。
+% 在下方粘贴 BibTeX：
 % Verified 2026-10-26: https://proceedings.mlr.press/v205/huang23c.html
 @InProceedings{inner-monologue,
   title = 	 {{Inner Monologue: Embodied Reasoning through Planning with Language Models}},
@@ -238,6 +343,12 @@
 
 
 
+% ----------------------------------------------------------------------
+% 17. 查找文章：τ₀-VLA: a Hierarchical Robot Foundation Model with World-Model-Guided Test-Time Computation
+% 引用键（必须一致）：tau0-vla
+% 查找入口：https://arxiv.org/abs/2608.16885
+% 本文引用用途：执行记忆与世界模型引导的高层子任务推理。
+% 在下方粘贴 BibTeX：
 % Verified 2026-10-26: https://arxiv.org/bibtex/2608.16885
 @misc{tau0-vla,
       title={{$\tau_0$-VLA: a Hierarchical Robot Foundation Model with World-Model-Guided Test-Time Computation}}, 
@@ -251,6 +362,12 @@
 
 
 
+% ----------------------------------------------------------------------
+% 18. 查找文章：MEM: Multi-Scale Embodied Memory for Vision Language Action Models
+% 引用键（必须一致）：mem
+% 查找入口：https://arxiv.org/abs/2603.03596
+% 本文引用用途：短时视频与长时文本的多尺度任务记忆。
+% 在下方粘贴 BibTeX：
 % Verified 2026-10-26: https://arxiv.org/bibtex/2603.03596
 @misc{mem,
       title={{MEM: Multi-Scale Embodied Memory for Vision Language Action Models}}, 
@@ -264,6 +381,12 @@
 
 
 
+% ----------------------------------------------------------------------
+% 19. 查找文章：SAM2Act: Integrating Visual Foundation Model with A Memory Architecture for Robotic Manipulation
+% 引用键（必须一致）：sam2act
+% 查找入口：https://proceedings.mlr.press/v267/fang25c.html
+% 本文引用用途：文章中的 SAM2Act+ 视觉记忆库；不要把基础 SAM2Act 与增强版本混写。
+% 在下方粘贴 BibTeX：
 % Verified 2026-10-26: https://proceedings.mlr.press/v267/fang25c.html
 @InProceedings{sam2act,
   title = 	 {{{SAM}2{A}ct: Integrating Visual Foundation Model with A Memory Architecture for Robotic Manipulation}},
@@ -283,6 +406,12 @@
 
 
 
+% ----------------------------------------------------------------------
+% 20. 查找文章：Reflexion: Language Agents with Verbal Reinforcement Learning
+% 引用键（必须一致）：reflexion
+% 查找入口：https://arxiv.org/abs/2303.11366
+% 本文引用用途：跨尝试保留反馈反思，不修改模型权重。
+% 在下方粘贴 BibTeX：
 % Verified 2026-10-26: https://proceedings.neurips.cc/paper_files/paper/2023/file/1b44b878bb782e6954cd888628510e90-Bibtex-Conference.bib
 @inproceedings{reflexion,
  author = {Shinn, Noah and Cassano, Federico and Gopinath, Ashwin and Narasimhan, Karthik and Yao, Shunyu},
@@ -299,7 +428,14 @@
 
 
 
+% ----------------------------------------------------------------------
+% 21. 查找文章：Voyager: An Open-Ended Embodied Agent with Large Language Models
+% 引用键（必须一致）：voyager
+% 查找入口：https://arxiv.org/abs/2305.16291
+% 本文引用用途：反馈驱动的可复用技能积累；正文明确其环境是 Minecraft。
+% 在下方粘贴 BibTeX：
 % Verified 2026-10-26: https://guanzhi.me/
+% Journal/year verified on first-author publication page; author list matches project BibTeX.
 @article{voyager,
   title = {{Voyager: An Open-Ended Embodied Agent with Large Language Models}},
   author = {Guanzhi Wang and Yuqi Xie and Yunfan Jiang and Ajay Mandlekar and Chaowei Xiao and Yuke Zhu and Linxi Fan and Anima Anandkumar},

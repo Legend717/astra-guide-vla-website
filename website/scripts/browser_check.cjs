@@ -68,7 +68,7 @@ const base = process.env.SITE_URL || 'http://127.0.0.1:8765/';
     checks.push('Result filters and playback speed');
     await page.goto(base+'report/');
     assert.equal(await page.locator('.report-content table').count(),9);
-    assert.equal(await page.locator('.report-content h2,.report-content h3,.report-content h4').count(),42);
+    assert.equal(await page.locator('.report-content h2,.report-content h3,.report-content h4').count(), JSON.parse(fs.readFileSync(path.join(root, 'content/report-inventory.json'), 'utf8')).headings.length + 2);
     assert.equal(await page.locator('.equation').count(),3);
     assert.equal(await page.locator('.csl-entry').count(),21);
     const missingReferences = await page.evaluate(()=>[...document.querySelectorAll('a[href^="#"]')].filter(a=>!document.getElementById(decodeURIComponent(a.hash.slice(1)))).map(a=>a.hash));

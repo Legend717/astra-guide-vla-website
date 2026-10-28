@@ -3,25 +3,26 @@
 <body class="report-page"><a class="skip-link" href="#report-content">Skip to report</a>
 <header class="site-header"><a class="wordmark" href="../">Astra<span>–</span>VLA <span class="wordmark-light">Harness</span></a><nav aria-label="Main"><a href="../#mechanism">Method</a><a href="../#demos">Demos</a><a href="../#results">Results</a><a class="nav-current" href="./" aria-current="page">Report</a></nav></header>
 <div class="report-layout"><aside class="report-sidebar"><details open><summary>Contents</summary><nav aria-label="Report contents"><a class="toc-level-2" href="#abstract"> Abstract</a><a class="toc-level-2" href="#sec:introduction">1 Introduction</a><a class="toc-level-2" href="#sec:related">2 Related work</a><a class="toc-level-2" href="#sec:harness">3 Harness</a><a class="toc-level-3" href="#system-and-task-context">3.1 System and task context</a><a class="toc-level-3" href="#grounded-subgoals">3.2 Grounded subgoals</a><a class="toc-level-3" href="#execution-delegation-and-recovery">3.3 Execution delegation and recovery</a><a class="toc-level-3" href="#cross-episode-experience-evolution">3.4 Cross-episode experience evolution</a><a class="toc-level-2" href="#sec:setup">4 Experimental setup</a><a class="toc-level-2" href="#sec:results">5 Results and analysis</a><a class="toc-level-3" href="#task-performance">5.1 Task performance</a><a class="toc-level-3" href="#supervision-and-execution-efficiency">5.2 Supervision and execution efficiency</a><a class="toc-level-3" href="#execution-and-experience-analysis">5.3 Execution and experience analysis</a><a class="toc-level-3" href="#failure-analysis">5.4 Failure analysis</a><a class="toc-level-2" href="#discussion-and-limitations">6 Discussion and limitations</a><a class="toc-level-2" href="#conclusion">7 Conclusion</a><a href="#references">References</a><a class="toc-level-2" href="#app:configuration">A Experimental settings</a><a class="toc-level-2" href="#app:task-results">B Per-task performance and execution allocation</a><a class="toc-level-2" href="#app:interfaces">C Interface and experience details</a><a class="toc-level-2" href="#app:measurements">D Measurement definitions</a><a class="toc-level-2" href="#app:completion-time">E Successful-episode execution time</a><a class="toc-level-2" href="#monitor-selection-and-resource-use">F Monitor selection and resource use</a><a class="toc-level-2" href="#app:case-sequences">G Within-episode case sequences</a><a class="toc-level-2" href="#app:failure-analysis">H Failure annotation and reference-frame clarification</a><a class="toc-level-2" href="#app:paired">I Review-policy comparison</a></nav></details><a class="pdf-link" href="../assets/technical-report.pdf">Download PDF ↗</a></aside>
-<main id="report-content" class="report-content"><header class="report-title"><p class="eyebrow">Technical report</p><h1>Can Astra Guide a VLA to Solve RoboMME?</h1><p class="report-subtitle">A Self-Evolving Harness for Memory-Dependent Manipulation</p><a href="../assets/technical-report.pdf">Read as PDF ↗</a></header><section class="abstract" id="abstract"><h2>Abstract</h2>
+<main id="report-content" class="report-content"><header class="report-title"><p class="eyebrow">Technical report</p><h1>Can Astra Guide a VLA to Solve RoboMME?</h1><p class="report-subtitle">A Self-Evolving Harness for Memory-Dependent Manipulation</p><div class="publication-authors"><p>Xingping Chen<sup>1</sup> · Zihao Mo<sup>1</sup> · Yimin Chen<sup>2</sup> · Zhanghui Kuang<sup>2</sup> · Guanbin Li<sup>1,*</sup></p><p><sup>1</sup> Sun Yat-sen University &nbsp; <sup>2</sup> TengenX &nbsp; <sup>*</sup> Corresponding author</p><div class="affiliation-logos"><img src="../assets/images/sysu-logo.svg" alt="Sun Yat-sen University logo"><img src="../assets/images/tengenx-logo.png" alt="TengenX logo"></div></div>
+<a href="../assets/technical-report.pdf">Read as PDF ↗</a></header><section class="abstract" id="abstract"><h2>Abstract</h2>
 <p>Robot manipulation often requires information from past observations
 to guide current actions. We present a self-evolving harness that
 combines GPT-6 Astra with the official RoboMME GroundSG
 vision-language-action model (VLA) for memory-dependent manipulation.
-Astra interprets task history and selects subgoals, while the VLA
-handles their execution. To reduce repeated supervision, Astra chooses
-how many control steps the VLA may execute before review and can select
-robot-state monitors that prompt earlier inspection. It also intervenes
-directly when execution requires correction. Starting from
-subtask-duration priors, the harness accumulates and revises experience
-across episodes. This experience informs when Astra can rely on the VLA
-and when closer supervision is needed, while VLA weights remain fixed.
-Across 800 test episodes covering all 16 RoboMME tasks, the system
-achieves 97.1% success, with 54.9% of control steps executed without
-additional Astra review. These results show that high task success can
-coexist with less frequent supervision, supporting experience-guided
-coordination as a practical way to combine VLM reasoning with learned
-robot control.</p>
+Astra reasons over task history to determine subgoals and delegates
+their execution to the VLA. To balance execution autonomy with
+supervision, Astra assigns execution budgets that specify the maximum
+number of control steps before the next review, selects robot-state
+monitors that can trigger earlier review, and directly intervenes when
+corrective control is needed. Starting from subtask-duration priors, the
+harness accumulates and revises experience across episodes,
+progressively informing supervision decisions without updating the VLA
+weights. Across 800 evaluation episodes spanning all 16 RoboMME tasks,
+our harness achieves 97.1% success, with 54.9% of control steps executed
+without additional Astra review. These results demonstrate that high
+task success can coexist with reduced supervision frequency,
+highlighting the potential of experience-guided coordination between
+high-level reasoning and low-level robot control.</p>
 </section>
 <div class="publication-panel figure-panel">
 <a class="zoom-image" href="../assets/images/teaser-v3.svg" data-zoom aria-label="Enlarge teaser v3"><img src="../assets/images/teaser-v3.svg" loading="lazy" alt="teaser v3"></a>
@@ -45,210 +46,226 @@ container hides a target, count earlier events, or reproduce a
 demonstrated action sequence. RoboMME evaluates these capabilities
 through 16 tasks grouped into counting, permanence, reference, and
 imitation <span class="citation" data-cites="robomme">[<a
-href="#ref-robomme" role="doc-biblioref">6</a>]</span>. Solving them
-requires both interpreting the relevant history and executing actions
-consistent with it.</p>
+href="#ref-robomme" role="doc-biblioref">6</a>]</span>. Solving these
+tasks requires both reasoning over relevant history and executing
+actions consistent with it.</p>
 <p>Recent RoboMME studies use GPT-6 Astra (hereafter Astra), a
 vision-language reasoning model, in two distinct roles. Direct control
 asks Astra to generate robot motion targets from visual history, placing
-action generation as well as task reasoning in the model and incurring
+both task reasoning and action generation in the model and requiring
 repeated inference during execution <span class="citation"
 data-cites="astra-direct">[<a href="#ref-astra-direct"
 role="doc-biblioref">12</a>]</span>. A three-tier system instead uses
 Astra to plan subgoals for a trained vision-language-action model (VLA),
-with a separate learned monitor tracking completion <span
+with a separate learned monitor tracking their completion <span
 class="citation" data-cites="astra-three-tier">[<a
 href="#ref-astra-three-tier" role="doc-biblioref">3</a>]</span>. This
-division reduces Astra’s involvement in routine motion, but concentrates
-its role on planning. We seek to retain the efficiency of learned
-control while also using Astra to supervise progress and intervene when
-execution goes wrong.</p>
+division reduces Astra’s involvement in routine motion but largely
+confines its role to planning. We explore how Astra can take a more
+active role in supervising VLA execution, particularly when to review
+progress and when to intervene.</p>
 <p>Reviewing every short action sequence, or action chunk, incurs
 repeated inference cost even when the VLA is still executing the same
-subgoal. Longer intervals between reviews can delay correction of a
-failed grasp or an incorrect motion. Appropriate supervision therefore
-depends on the current task stage, visual evidence, and the controller’s
-behavior in similar situations. Experience from earlier episodes can
-help guide these decisions, but must be updated when new outcomes reveal
-its limitations.</p>
-<p>We present a self-evolving harness in which Astra learns from
-execution experience how to supervise the official RoboMME GroundSG VLA
-(Figure <a href="#fig:teaser">1</a>). Given task history and current
-observations, Astra selects a subgoal and a finite execution budget.
-When permitting a longer interval, it can activate auxiliary monitors,
-such as gripper-state or directional-motion checks, to trigger review
-before the budget expires. The VLA continues to react to the latest
-observations throughout this interval. At review, Astra decides whether
-to continue execution, revise the subgoal, or intervene directly.
-Post-episode reflection revises advice about these choices,
-progressively informing supervision without changing VLA weights.</p>
-<p>We evaluate the harness on all 16 RoboMME tasks with 50 episodes per
+subgoal. Longer intervals between reviews, however, can delay correction
+of a failed grasp or an incorrect motion. The appropriate level of
+supervision depends on the task stage, observed progress, and how the
+VLA has behaved in similar situations. Experience from earlier episodes
+can inform these decisions, provided it is revised when new outcomes
+reveal its limitations.</p>
+<p>To address this trade-off, we present a self-evolving harness that
+uses accumulated execution experience to guide Astra’s supervision of
+the official RoboMME GroundSG VLA (Figure <a href="#fig:teaser">1</a>).
+Given task history and current observations, Astra selects a subgoal and
+assigns a finite execution budget. For longer execution intervals, it
+can activate auxiliary monitors, such as gripper-state or
+directional-motion checks, to trigger review before the budget expires.
+The VLA continues to act on updated observations throughout this
+interval. At each review, Astra decides whether to continue execution,
+revise the subgoal, or intervene directly. Initialized with
+subtask-duration priors derived from the VLA training data, the harness
+accumulates and revises experience across episodes to guide subsequent
+supervision decisions without changing the VLA weights.</p>
+<p>We evaluate the harness on all 16 RoboMME tasks, with 50 episodes per
 task. It achieves 97.1% success across 800 episodes, reaches at least
 90% on every task, and executes 54.9% of control steps without
 additional Astra review. Execution and experience traces show how prior
 outcomes lead to revised review intervals and more specific task
-interpretations. Together, these results and traces illustrate how
-experience can guide Astra’s supervision while the VLA carries out
-substantial portions of execution without additional review.</p>
+interpretations. These results show that experience-guided supervision
+can achieve high task success while allowing the VLA to execute
+substantial portions of a task without repeated Astra review.</p>
 <h2 id="sec:related"><span class="section-number">2</span> Related work</h2>
 <h3 id="foundation-models-for-robot-control" class="paragraph-heading">Foundation models for robot control.</h3>
-<p>Language and vision-language models connect high-level task reasoning
-to robot execution through affordance-based skill selection, robot API
-programs, and spatial objectives for motion planning <span
+<p>Language and vision-language models have been used to connect task
+reasoning with robot execution through affordance-based skill selection,
+robot API programs, and spatial objectives for motion planning <span
 class="citation" data-cites="saycan code-as-policies voxposer">[<a
 href="#ref-voxposer" role="doc-biblioref">9</a>, <a href="#ref-saycan"
 role="doc-biblioref">11</a>, <a href="#ref-code-as-policies"
-role="doc-biblioref">14</a>]</span>. VLAs learn action prediction from
-robot demonstrations and pretrained representations <span
-class="citation" data-cites="rt2 openvla pi05">[<a href="#ref-pi05"
+role="doc-biblioref">14</a>]</span>. Vision-language-action models
+(VLAs) combine pretrained visual-language representations with robot
+demonstrations to learn action prediction <span class="citation"
+data-cites="rt2 openvla pi05">[<a href="#ref-pi05"
 role="doc-biblioref">1</a>, <a href="#ref-openvla"
 role="doc-biblioref">13</a>, <a href="#ref-rt2"
-role="doc-biblioref">21</a>]</span>, while RoboICL and GPT-Policy
-explore general-purpose VLM control from demonstrations and feedback
-without deployment-time weight updates <span class="citation"
+role="doc-biblioref">21</a>]</span>. RoboICL and GPT-Policy explore
+in-context robot control with general-purpose VLMs, using demonstrations
+and interaction feedback to adapt behavior without updating model
+weights at deployment <span class="citation"
 data-cites="roboicl gpt-policy">[<a href="#ref-gpt-policy"
 role="doc-biblioref">4</a>, <a href="#ref-roboicl"
-role="doc-biblioref">15</a>]</span>. The direct Astra policy generates
-Cartesian waypoints using sampled episode history on RoboMME <span
+role="doc-biblioref">15</a>]</span>. On RoboMME, direct Astra control
+generates Cartesian waypoints using sampled episode history <span
 class="citation" data-cites="astra-direct">[<a href="#ref-astra-direct"
-role="doc-biblioref">12</a>]</span>. In our system, a trained VLA
-handles routine execution, while Astra can directly intervene when
-needed.</p>
+role="doc-biblioref">12</a>]</span>. Our harness instead relies on a
+trained VLA for routine motion, with Astra providing task reasoning,
+supervision, and direct intervention when needed.</p>
 <h3 id="hierarchical-execution-and-feedback" class="paragraph-heading">Hierarchical execution and feedback.</h3>
 <p>Inner Monologue incorporates environmental feedback into
 language-based planning <span class="citation"
 data-cites="inner-monologue">[<a href="#ref-inner-monologue"
-role="doc-biblioref">10</a>]</span>. PonderPounce uses a multimodal
-model to maintain episode context and guide a fast VLA, while
+role="doc-biblioref">10</a>]</span>. PonderPounce maintains episode
+context in a multimodal language model and asynchronously passes
+cognition tokens to a fast VLA, allowing high-level reasoning to inform
+low-level control <span class="citation" data-cites="ponderpounce">[<a
+href="#ref-ponderpounce" role="doc-biblioref">5</a>]</span>.
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>τ</mi><mn>0</mn></msub><annotation encoding="application/x-tex">\tau_0</annotation></semantics></math>-VLA
-combines execution memory with world-model-guided subtask selection
-<span class="citation" data-cites="ponderpounce tau0-vla">[<a
-href="#ref-tau0-vla" role="doc-biblioref">2</a>, <a
-href="#ref-ponderpounce" role="doc-biblioref">5</a>]</span>. The
-three-tier Astra system uses a fine-tuned Qwen3-VL-4B monitor to detect
-subtask completion and trigger the next Astra planning call, while a
+uses execution memory and world-model-guided search to select subtasks
+for a low-level policy <span class="citation" data-cites="tau0-vla">[<a
+href="#ref-tau0-vla" role="doc-biblioref">2</a>]</span>. More closely
+related to our setting is the three-tier Astra system, which separates
+planning, monitoring, and execution. Astra generates subgoals, a
+fine-tuned Qwen3-VL-4B monitor detects their completion, and a
 fine-tuned
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>π</mi><mn>0.5</mn></msub><annotation encoding="application/x-tex">\pi_{0.5}</annotation></semantics></math> executes
-the subtasks <span class="citation" data-cites="astra-three-tier">[<a
-href="#ref-astra-three-tier" role="doc-biblioref">3</a>]</span>. In
-contrast, our harness allows Astra to schedule execution reviews and
-configure auxiliary monitors that can trigger earlier inspection. Beyond
-subtask completion, Astra can assess execution errors and intervene
-directly when recovery is needed.</p>
+them <span class="citation" data-cites="astra-three-tier">[<a
+href="#ref-astra-three-tier" role="doc-biblioref">3</a>]</span>. Our
+harness extends Astra’s role beyond subgoal planning to execution
+supervision and recovery. Astra assigns execution budgets, selects
+auxiliary monitors for earlier inspection, and directly intervenes when
+corrective control is needed.</p>
 <h3 id="task-memory-and-experience-reuse" class="paragraph-heading">Task memory and experience reuse.</h3>
-<p>RoboMME evaluates manipulation that depends on past observations
-<span class="citation" data-cites="robomme">[<a href="#ref-robomme"
-role="doc-biblioref">6</a>]</span>. Relevant memory mechanisms include
+<p>RoboMME evaluates manipulation tasks that require reasoning over past
+observations <span class="citation" data-cites="robomme">[<a
+href="#ref-robomme" role="doc-biblioref">6</a>]</span>. Existing
+approaches maintain task history in different forms, including
 SAM2Act+’s visual memory bank, MEM’s short-horizon video and
 long-horizon text, SimpleMemVLA’s sampled video context, and MemER’s
-retrieval of task-relevant historical keyframes <span class="citation"
+retrieval of relevant historical keyframes <span class="citation"
 data-cites="sam2act mem simplememvla memer">[<a href="#ref-sam2act"
 role="doc-biblioref">7</a>, <a href="#ref-memer"
 role="doc-biblioref">17</a>, <a href="#ref-mem"
 role="doc-biblioref">18</a>, <a href="#ref-simplememvla"
-role="doc-biblioref">20</a>]</span>. Our harness uses archived images
-and episode notes to maintain task context within an episode, while
-separately accumulating experience to guide decisions in future
-episodes.</p>
-<p>Beyond within-episode memory, Reflexion uses textual feedback to
-improve subsequent attempts, Voyager accumulates reusable skills through
-interaction, and ME-Brain-1.0 consolidates embodied experience for
-future decisions <span class="citation"
-data-cites="reflexion voyager mebrain">[<a href="#ref-mebrain"
-role="doc-biblioref">8</a>, <a href="#ref-reflexion"
-role="doc-biblioref">16</a>, <a href="#ref-voyager"
-role="doc-biblioref">19</a>]</span>. Our persistent store contains
-conditional execution advice that Astra can revise after an episode.
-This experience guides subgoal planning, review timing, and recovery
-decisions, with recommendations tied to their supporting evidence and
-applicable conditions.</p>
+role="doc-biblioref">20</a>]</span>. These approaches provide historical
+context for decisions within an episode. Our harness likewise retrieves
+archived observations and maintains episode notes, but also accumulates
+experience that informs decisions across episodes.</p>
+<p>Experience reuse beyond a single episode has been explored in
+Reflexion, which uses textual feedback to improve later attempts, and
+Voyager, which builds a library of reusable skills through interaction
+<span class="citation" data-cites="reflexion voyager">[<a
+href="#ref-reflexion" role="doc-biblioref">16</a>, <a
+href="#ref-voyager" role="doc-biblioref">19</a>]</span>. ME-Brain-1.0
+extends this direction to embodied intelligence by consolidating
+interaction trajectories into reusable experience and skills without
+retraining the underlying models <span class="citation"
+data-cites="mebrain">[<a href="#ref-mebrain"
+role="doc-biblioref">8</a>]</span>. Our harness focuses on using such
+experience to supervise an existing VLA. Astra maintains revisable
+recommendations for subgoal selection, execution budgets, monitor
+selection, and recovery, together with their applicable conditions and
+supporting evidence. Astra can revise these recommendations based on
+episode outcomes and reuse them in later decisions.</p>
 <h2 id="sec:harness"><span class="section-number">3</span> Harness</h2>
 <h3 id="system-and-task-context"><span class="section-number">3.1</span> System and task context</h3>
-<p>The harness connects Astra’s task decisions to VLA execution and
-direct intervention (Figure <a href="#fig:architecture">2</a>). At each
-decision point, Astra receives the task instruction, current front and
-wrist RGB images, robot state, and a summary of the next action sequence
-predicted by the VLA. It can query archived observations and consult
-episode notes. Relevant global and task experience remains available
-throughout the episode. Forward kinematics is used to estimate the
-end-effector motion implied by the VLA’s predicted joint actions.
-Episode success is determined by official environment feedback.</p>
+<p>The harness combines Astra’s task reasoning and supervision with VLA
+execution and direct intervention (Figure <a
+href="#fig:architecture">2</a>). The system uses the official RoboMME
+GroundSG checkpoint for low-level control, while Astra selects subgoals,
+supervises execution, and intervenes directly when needed.</p>
+<p>Before each Astra review, the VLA predicts an action sequence from
+the current observations and subgoal. The harness uses forward
+kinematics to estimate the corresponding end-effector motion, making the
+predicted actions easier for Astra to interpret. Astra then receives the
+task instruction, current front and wrist RGB images, robot state, and a
+summary of the VLA’s predicted motion. It can also query archived
+observations and consult episode notes and relevant experience before
+making its next decision.</p>
 <div class="publication-panel figure-panel">
 <a class="zoom-image" href="../assets/images/architecture.svg" data-zoom aria-label="Enlarge architecture"><img src="../assets/images/architecture.svg" loading="lazy" alt="architecture"></a>
 <div class="caption">
-<p><strong>Figure 2.</strong> Astra sets execution budgets and selects
-monitors while the VLA reacts to new observations. Direct interventions
-bypass the VLA; post-episode review revises advice for later
-decisions.</p>
+<p><strong>Figure 2.</strong> Astra assigns execution budgets and
+selects monitors while the VLA responds to updated observations. Direct
+interventions bypass the VLA, and post-episode review revises experience
+for subsequent episodes.</p>
 </div>
 <span class="reference-anchor" id="fig:architecture"></span>
 </div>
-<p>The VLA uses the official RoboMME GroundSG checkpoint and maps its
-current observation and grounded subgoal to a joint-action sequence.
-Astra can permit one action chunk, let the VLA execute several chunks
-before review, or directly specify end-effector targets in world
-coordinates and gripper commands. Direct intervention bypasses the VLA
-but acts on the same robot and episode. After a subgoal change or direct
-intervention, the VLA predicts a new action sequence from the latest
+<p>Astra can authorize a single action chunk, delegate multiple chunks
+before the next review, or directly issue end-effector targets in world
+coordinates and gripper commands. After a subgoal change or direct
+intervention, the VLA predicts a new action sequence using the latest
 observation and current subgoal before execution resumes.</p>
-<p>History queries recover evidence absent from the current views,
-including reset demonstrations and intermediate observations. Astra
-first samples a requested interval, including its endpoints, then
-narrows the interval or inspects original frames when necessary. Episode
-notes retain task-relevant interpretations and unresolved hypotheses
-with frame references, allowing Astra to revisit their supporting
-observations when needed. The agent uses task instructions, front and
-wrist images, and robot state available under standard RoboMME
-evaluation. It receives no privileged environment information such as
-ground-truth object states or oracle subgoals.</p>
+<p>History queries retrieve information no longer visible in the current
+observations, including reset demonstrations and intermediate frames.
+Astra initially samples frames from a requested interval, including its
+endpoints, and can narrow the interval or inspect individual frames when
+more detail is needed. Episode notes preserve task-relevant
+interpretations, unresolved hypotheses, and references to supporting
+frames. Global and task-specific experience remains available throughout
+the episode. All decisions rely on task instructions, RGB observations,
+and robot state available under standard RoboMME evaluation. The harness
+does not access privileged information such as ground-truth object
+states or oracle subgoals. Episode success is determined by official
+environment feedback.</p>
 <h3 id="grounded-subgoals"><span class="section-number">3.2</span> Grounded subgoals</h3>
 <p>A grounded subgoal combines a RoboMME task template, semantic
 attributes, and target image points <span class="citation"
 data-cites="robomme">[<a href="#ref-robomme"
-role="doc-biblioref">6</a>]</span>. Astra resolves the attributes from
-history and the current scene; the harness converts normalized points to
-front-image pixel coordinates and inserts them into the instruction. For
-example, an InsertPeg grasp specifies the near or far end of the peg and
-its image location:</p>
+role="doc-biblioref">6</a>]</span>. Astra identifies the relevant
+attributes from task history and the current scene. The harness then
+converts normalized image points into front-image pixel coordinates for
+the grounded instruction. For example, an InsertPeg grasp specifies
+which end of the peg to grasp and its image location:</p>
 <blockquote>
 <p>pick up the peg by grasping the near end at &lt;128, 64&gt;</p>
 </blockquote>
-<p>The coordinates here are illustrative image references. Insertion
-additionally specifies the left or right side of the box. The VLA
-receives this grounded instruction with the task instruction, current
-images, and robot state, matching the representation used in its RoboMME
-training annotations. Applicable experience can advise target selection
-or recovery, while Astra judges whether its conditions fit the scene.
-Experience can therefore influence which subgoal is selected without
-changing the task requirements or the controller’s instruction
-vocabulary. Appendix <a href="#app:interfaces">C</a> gives conversion
+<p>The coordinates are illustrative. The insertion subgoal also
+specifies the left or right side of the box. The VLA receives the
+grounded instruction alongside the task instruction, current images, and
+robot state, following the representation used in its RoboMME training
+annotations. Applicable experience can guide target selection or
+recovery, while Astra determines whether the recorded conditions apply
+to the current scene. Experience can thus influence subgoal selection
+without changing the task requirements or the VLA’s instruction
+vocabulary. Appendix <a href="#app:interfaces">C</a> provides conversion
 and validation details.</p>
 <h3 id="execution-delegation-and-recovery"><span class="section-number">3.3</span> Execution delegation and recovery</h3>
 <p>To avoid unnecessary reviews during routine execution, Astra assigns
 a finite execution budget based on current observations, task history,
-and relevant experience. Initial budget advice comes from the number of
-control steps used to complete subtasks in training demonstrations; the
-lower quartile of each subtask’s duration distribution provides a
-starting point. Subsequent experience refines these recommendations for
-particular stages and observed execution difficulties.</p>
-<p>Longer execution intervals can be paired with auxiliary monitoring
-tools. Gripper-state changes, directional displacement beyond a
-specified threshold, or a lack of end-effector movement can indicate a
-stage transition or potential execution problem. Astra selects the
-relevant monitors when assigning a budget. A detected condition prompts
-visual review, allowing Astra to inspect progress before the full
-interval ends. These tools let Astra retain longer budgets during
-routine motion while watching for events that may require attention.
-Thresholds and implementation details appear in Appendix <a
-href="#app:configuration">A</a>.</p>
-<p>The budget counts actual executed control steps. At chunk
+and relevant experience. Initial budget recommendations are derived from
+subtask durations in the VLA training demonstrations, using the lower
+quartile of each subtask’s duration distribution as a starting point. As
+experience accumulates, these recommendations are refined for specific
+task stages and execution difficulties.</p>
+<p>For longer execution intervals, Astra can activate auxiliary monitors
+to detect events that may require attention. These include gripper-state
+changes, directional displacement beyond a specified threshold, and a
+lack of end-effector movement. When assigning a budget, Astra selects
+the relevant monitors, whose triggers prompt visual review before the
+budget expires. This allows longer periods of routine VLA execution
+without losing the ability to inspect potentially problematic events.
+Monitor thresholds and implementation details are provided in
+Appendix <a href="#app:configuration">A</a>.</p>
+<p>The budget counts actual executed control steps rather than predicted
+actions. At chunk
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>j</mi><annotation encoding="application/x-tex">j</annotation></semantics></math>,
 let
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>b</mi><mi>j</mi></msub><annotation encoding="application/x-tex">b_j</annotation></semantics></math>
-be the remaining budget and
+denote the remaining budget and
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>h</mi><mi>j</mi></msub><annotation encoding="application/x-tex">h_j</annotation></semantics></math>
-the number of predicted actions available for execution. Execution
-uses</p>
+the number of predicted actions available for execution. We use the
+official GroundSG evaluation setting of 16 executed steps per action
+chunk as the maximum chunk length. The number of actions released is</p>
 <div class="equation">
 <p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mo>ℓ</mo><mi>j</mi></msub><mo>=</mo><mo>min</mo><mrow><mo stretchy="true" form="prefix">(</mo><mn>16</mn><mo>,</mo><msub><mi>h</mi><mi>j</mi></msub><mo>,</mo><msub><mi>b</mi><mi>j</mi></msub><mo stretchy="true" form="postfix">)</mo></mrow><mo>,</mo><mspace width="2.0em"></mspace><msub><mi>b</mi><mrow><mi>j</mi><mo>+</mo><mn>1</mn></mrow></msub><mo>=</mo><msub><mi>b</mi><mi>j</mi></msub><mo>−</mo><msub><mi>u</mi><mi>j</mi></msub><mo>,</mo><mi>A</mi><mi>S</mi><mi>T</mi><mi>R</mi><mi>A</mi><mi>H</mi><mi>T</mi><mi>M</mi><mi>L</mi><mi>T</mi><mi>O</mi><mi>K</mi><mi>E</mi><mi>N</mi><mn>00055</mn><mi>E</mi><mi>N</mi><mi>D</mi></mrow><annotation encoding="application/x-tex">\ell_j=\min(16,h_j,b_j),\qquad b_{j+1}=b_j-u_j,
 
@@ -256,88 +273,88 @@ uses</p>
 <span class="reference-anchor" id="eq:budget"></span></annotation></semantics></math></p>
 <span class="equation-number">(1)</span></div>
 <p>where
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mo>ℓ</mo><mi>j</mi></msub><annotation encoding="application/x-tex">\ell_j</annotation></semantics></math>
-is the number of actions released for execution and
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>u</mi><mi>j</mi></msub><mo>≤</mo><msub><mo>ℓ</mo><mi>j</mi></msub></mrow><annotation encoding="application/x-tex">u_j\leq\ell_j</annotation></semantics></math>
-is the number actually executed, which may be smaller if execution stops
-early. After executing these steps, the VLA predicts the next action
-chunk from the latest observations. Thus the controller continues to
-respond to the scene while Astra reviews at the selected interval or
-when a monitor triggers.</p>
-<p>At a nonterminal review with a valid execution state, Astra compares
-the new observations with the intended subgoal and relevant history. It
-can extend execution, choose another subgoal, permit one chunk at a time
-for close supervision, or intervene directly. For example, an incorrect
-target may call for another history query and a revised subgoal, whereas
+is the number of actions actually executed. Execution may stop before
+all released actions are completed. As long as the budget remains and no
+monitor has triggered a review, the VLA predicts the next action chunk
+from updated observations. The VLA therefore continues to respond to
+changes in the scene without requiring Astra to review every chunk.</p>
+<p>At each review during execution, Astra compares the latest
+observations with the intended subgoal and relevant history. It can
+extend execution, select a new subgoal, authorize one chunk at a time
+for closer supervision, or intervene directly. An incorrect target, for
+example, may require another history query and a revised subgoal, while
 a stalled contact motion may call for a local end-effector correction.
-After intervention, the VLA receives the resulting observation and
-resumes control under Astra’s next decision. Budgeted execution and
-event-triggered review therefore support both sustained VLA operation
-and targeted recovery.</p>
+After intervention, the VLA resumes from the resulting observation under
+Astra’s next decision. Budgeted execution and event-triggered reviews
+allow the VLA to handle routine motion while Astra focuses on decisions
+and recovery.</p>
 <h3 id="cross-episode-experience-evolution"><span class="section-number">3.4</span> Cross-episode experience evolution</h3>
-<p>The experience store captures what Astra learns about task
-interpretation and VLA execution across episodes. Entries pair an
-observation or recommendation with its applicable conditions and
-supporting frames. Advice can concern target identification, review
-intervals, monitoring choices, or recovery. Revisions replace outdated
-recommendations while preserving their earlier versions. Each episode
-uses the available global and task-specific experience, and new findings
-become available to subsequent episodes.</p>
-<p>After the episode ends, Astra performs the review in the same agent
-session. Its inputs include retained interactions and tool responses,
-episode notes, active experience, and the official outcome and
-termination status. It can query archived front and wrist images, moving
-from sparse sampling to closer inspection. Execution records include the
-selected budgets, the number of steps executed, and the conditions that
-prompted review. Astra uses these records to identify problematic
-stages, assess its earlier supervision and recovery decisions, and
-determine whether the findings should update existing experience.</p>
-<p>Astra adds an entry when review identifies a transferable finding, or
-revises an existing entry when new evidence changes its recommendation
-or applicable conditions. Findings already covered by the store require
-no update. For example, hovering observed before a scheduled review can
-motivate a shorter budget for that phase or the use of a
-stationary-motion monitor. A recommendation that works for one temporal
-query can be revised to distinguish before-event and after-event tasks.
-In this way, experience develops from individual outcomes into
-conditional guidance for later decisions.</p>
-<p>Updates pass structural and scope checks before entering the
-experience store. Later decisions can cite the relevant entries when
-choosing a subgoal, review interval, or recovery action, making it
-possible to trace how past outcomes informed subsequent actions
-(Section <a href="#sec:results">5</a>). Adaptation takes place through
-this evolving context while the VLA weights remain fixed.</p>
+<p>The experience store records what Astra learns about task
+interpretation and VLA execution across episodes. Each entry contains an
+observation or recommendation, its applicable conditions, and references
+to supporting frames. Experience can guide target identification,
+execution budgets, monitor selection, and recovery. Existing entries can
+be revised when new evidence changes their recommendations or applicable
+conditions, with earlier versions preserved. New findings become
+available to subsequent episodes.</p>
+<p>After each episode, Astra reviews the execution in the same agent
+session. The review draws on retained interactions and tool responses,
+episode notes, active experience, and official outcome and termination
+feedback. Astra can also inspect archived front and wrist images,
+starting with sparse samples and examining individual intervals in
+greater detail when needed. Execution records preserve selected budgets,
+executed steps, and review triggers. These records help Astra identify
+problematic stages and reconsider its earlier supervision and recovery
+decisions.</p>
+<p>Based on this review, Astra adds new entries for findings not yet
+covered by the store and revises existing ones when new evidence changes
+their recommendations or applicable conditions. For example, hovering
+before a scheduled review may motivate a shorter budget for that stage
+or the use of a stationary-motion monitor. Experience from a temporal
+query may also be refined to distinguish tasks that refer to events
+before or after a particular observation. These updates turn individual
+outcomes into more specific guidance for future decisions.</p>
+<p>Experience updates undergo structural and scope checks before being
+stored. During later episodes, Astra can refer to relevant entries when
+selecting subgoals, setting execution budgets, or choosing recovery
+actions. The resulting decisions can be traced back to the experience
+that informed them (Section <a href="#sec:results">5</a>). The harness
+thus adapts through accumulated and revised experience while keeping the
+VLA weights fixed.</p>
 <h2 id="sec:setup"><span class="section-number">4</span> Experimental setup</h2>
 <h3 id="benchmark-and-adaptation" class="paragraph-heading">Benchmark and adaptation.</h3>
-<p>We evaluate the official RoboMME test split: 16 tasks across
+<p>We evaluate the official RoboMME test split, covering 16 tasks across
 Counting, Permanence, Reference, and Imitation, with 50 episodes per
-task and 800 in total <span class="citation" data-cites="robomme">[<a
-href="#ref-robomme" role="doc-biblioref">6</a>]</span>. Episode seeds
-and difficulty follow the benchmark specification; official environment
-feedback determines success. We use GPT-6 Astra as the supervisor and
-the official RoboMME GroundSG checkpoint, a grounded-subgoal
+task and 800 episodes in total <span class="citation"
+data-cites="robomme">[<a href="#ref-robomme"
+role="doc-biblioref">6</a>]</span>. Episode seeds and difficulty follow
+the benchmark specification, and success is determined by official
+environment feedback. We use GPT-6 Astra as the supervisor and the
+official RoboMME GroundSG checkpoint, a grounded-subgoal
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>π</mi><mn>0.5</mn></msub><annotation encoding="application/x-tex">\pi_{0.5}</annotation></semantics></math> policy,
-as the VLA. The VLA weights remain fixed. Initial experience consists of
-duration recommendations derived from subtask completion-step statistics
-in training demonstrations. In every task, the first five episodes
-permit experience updates after either outcome; the remaining 45 permit
-updates only after unsuccessful outcomes. All 50 episodes contribute to
-the reported success rate. The experience store remains fixed within
-each episode, and accepted revisions are made available to subsequent
-episodes. Appendix <a href="#app:configuration">A</a> specifies model
-settings, limits, and cross-task sharing.</p>
+as the VLA. The VLA weights remain fixed throughout evaluation.</p>
+<p>The experience store is initialized with subtask-duration
+recommendations derived from training demonstrations. For each task,
+experience can be updated after either successful or failed episodes
+during the first five evaluations. For the remaining 45 episodes,
+updates are restricted to failures. All 50 episodes count toward the
+reported success rate. Experience remains fixed during each episode,
+with accepted updates becoming available to subsequent episodes.
+Appendix <a href="#app:configuration">A</a> provides model settings,
+execution limits, and cross-task experience-sharing details.</p>
 <h3 id="observation-access" class="paragraph-heading">Observation access.</h3>
-<p>The harness uses the task instruction, front and wrist RGB images,
-and robot state available to the VLA under standard RoboMME evaluation.
-Historical observations come from the same observation stream. Planning
-and control receive no privileged environment ground truth, such as
-hidden object states or oracle subgoals. Official success and
+<p>The harness uses task instructions, front and wrist RGB images, and
+robot state available under standard RoboMME evaluation. Historical
+observations are retrieved from the same observation stream. Neither
+planning nor control accesses privileged environment information, such
+as hidden object states or oracle subgoals. Official success and
 termination feedback is used for outcome assessment and post-episode
 review.</p>
 <h3 id="comparisons" class="paragraph-heading">Comparisons.</h3>
-<p>Table <a href="#tab:performance">1</a> groups learned policies,
-direct VLM control, and hierarchical systems, reporting overall success
-<span class="citation"
+<p>Table <a href="#tab:performance">1</a> compares learned policies,
+direct VLM control, and hierarchical systems using published overall
+success rates <span class="citation"
 data-cites="robomme memer simplememvla astra-direct ponderpounce astra-three-tier">[<a
 href="#ref-astra-three-tier" role="doc-biblioref">3</a>, <a
 href="#ref-ponderpounce" role="doc-biblioref">5</a>, <a
@@ -345,40 +362,42 @@ href="#ref-robomme" role="doc-biblioref">6</a>, <a
 href="#ref-astra-direct" role="doc-biblioref">12</a>, <a
 href="#ref-memer" role="doc-biblioref">17</a>, <a
 href="#ref-simplememvla" role="doc-biblioref">20</a>]</span>. Human
-skill selection and GroundSG+Oracle are separate privileged references.
-PonderPounce-9B uses the reported standard-data leaderboard result, and
-the other reference scores follow the cited benchmark and system
-reports; controller training, history access, intervention interfaces,
-and test-time experience updates differ across systems. We additionally
-compare delegation with per-chunk review on ten StopCube test seeds.
-Both conditions are rerun with the same models, history tools, recovery
-interfaces, and execution limits. Within each pair, both read the same
-saved version of the experience store, and experience updates are
-disabled. Runs are serial, with the order of conditions alternating
-across pairs. This comparison isolates review policy under a fixed
-experience context for each seed.</p>
+skill selection and GroundSG+Oracle are reported separately as
+privileged references. For PonderPounce-9B, we use its reported
+standard-data leaderboard result. Other reference scores follow the
+cited benchmark and system reports. These systems differ in controller
+training, history access, intervention interfaces, and test-time
+adaptation.</p>
+<p>We also compare our execution delegation with per-chunk Astra review
+on ten matched StopCube test seeds. Both conditions use the same models,
+history tools, recovery interfaces, and execution limits. For each seed,
+the two conditions share a saved version of the experience store, with
+updates disabled during comparison. Runs are conducted serially,
+alternating the order of the two conditions across seed pairs. This
+setup isolates the effect of review policy under matched experience
+conditions.</p>
 <h3 id="measurements" class="paragraph-heading">Measurements.</h3>
-<p>We report task success and the distribution of control steps across
-four execution modes: subgoal entry, Astra intervention, automatic VLA
-continuation, and VLA continuation after review. The last mode is the
-first VLA chunk released after Astra checks progress on the current
-subgoal; subsequent chunks within the same budget count as automatic
-continuation. Completion time includes model inference, history queries,
-action execution, and waiting. Completion-time statistics are reported
-for successful episodes, since failed runs may terminate early or
-continue until the execution limit. Appendix <a
-href="#app:measurements">D</a> gives detailed accounting.</p>
+<p>We report task success and the fraction of executed control steps
+attributed to four modes: subgoal entry, Astra intervention, automatic
+VLA continuation, and VLA continuation after review. The last mode
+covers the first VLA chunk released after Astra reviews progress on the
+current subgoal. Subsequent chunks executed within the same budget count
+as automatic continuation. Completion time includes model inference,
+history queries, action execution, and waiting. We report
+completion-time statistics for successful episodes, since failures may
+terminate early or run until the execution limit. Appendix <a
+href="#app:measurements">D</a> provides detailed accounting.</p>
 <h2 id="sec:results"><span class="section-number">5</span> Results and analysis</h2>
 <h3 id="task-performance"><span class="section-number">5.1</span> Task performance</h3>
 <p>The harness succeeds in 777 of 800 episodes (97.1%; Table <a
 href="#tab:performance">1</a>), exceeding the published direct-Astra and
-three-tier Astra scores by 5.0 and 18.0 percentage points, respectively.
-Success reaches 97.0% on Counting, 97.5% on Permanence, and 97.0% on
-both Reference and Imitation. Every task achieves at least 90%, and
-seven reach 50/50 successes. Gains over direct Astra are particularly
-large on MoveCube (100% versus 54%) and StopCube (96% versus 54%). The
-task results in Figure <a href="#fig:task-comparison">3</a> show that
-the combined system performs well across all four memory categories.</p>
+three-tier Astra results by 5.0 and 18.0 percentage points,
+respectively. Success reaches 97.0% on Counting, 97.5% on Permanence,
+and 97.0% on both Reference and Imitation. Every task achieves at least
+90% success, with seven tasks reaching 50/50. The largest differences
+from direct Astra include MoveCube (100% versus 54%) and StopCube (96%
+versus 54%). Figure <a href="#fig:task-comparison">3</a> shows the
+per-task results alongside published references.</p>
 <div class="publication-panel figure-panel">
 <div class="mini-panel">
 <div class="caption">
@@ -471,19 +490,20 @@ published references <span class="citation"
 data-cites="robomme astra-direct">[<a href="#ref-robomme"
 role="doc-biblioref">6</a>, <a href="#ref-astra-direct"
 role="doc-biblioref">12</a>]</span>. Human uses an oracle skill
-interface; GroundSG+Oracle supplies true subgoals to a learned policy;
-Astra directly specifies waypoints.</p>
+interface, GroundSG+Oracle supplies true subgoals to a learned policy,
+and Astra directly specifies waypoints.</p>
 </div>
 <span class="reference-anchor" id="fig:task-comparison"></span>
 </div>
 </div>
 <h3 id="supervision-and-execution-efficiency"><span class="section-number">5.2</span> Supervision and execution efficiency</h3>
-<p>Automatic VLA continuation accounts for 54.93% of control steps,
-allowing more than half of execution to proceed without additional Astra
-review (Table <a href="#tab:allocation">2</a>). Astra intervenes
-directly in 33.5% of episodes, but these interventions account for only
-4.91% of control steps. Most motion therefore remains with the learned
-controller, while Astra contributes local corrections when needed.</p>
+<p>Automatic VLA continuation accounts for 54.93% of all executed
+control steps, allowing more than half of execution to proceed without
+additional Astra review (Table <a href="#tab:allocation">2</a>). Astra
+intervenes directly in 33.5% of episodes, but these interventions
+account for only 4.91% of control steps. Most motion is therefore
+handled by the learned controller, with Astra providing corrections when
+needed.</p>
 <div class="publication-panel table-panel">
 <div class="caption">
 <p><strong>Table 2.</strong> Distribution of executed control steps
@@ -520,35 +540,36 @@ additional Astra review.</p>
 </table>
 </div>
 </div>
-<p>Review frequency adapts to the demands of each task. Insertion
-involves error-prone contact and alignment, so InsertPeg often requires
-close inspection and corrective action. RouteStick instead contains
-short directional subtasks; Astra tends to permit one chunk at a time to
-avoid continuing past a subtask boundary. In VideoPlaceButton, Astra can
-allow longer execution intervals once the target has been identified.
-These patterns suggest that review needs vary across task stages, with
-some stages requiring closer supervision than others.</p>
-<p>Appendix <a href="#app:completion-time">E</a> reports full-benchmark
-completion times. We use a matched comparison to examine the effect of
-review frequency on execution time and model usage.</p>
+<p>Supervision patterns differ across tasks and execution stages.
+InsertPeg involves contact and alignment, often requiring close
+inspection and corrective action. RouteStick consists of short
+directional subtasks, so Astra tends to release one chunk at a time to
+avoid overshooting a subtask boundary. In VideoPlaceButton, Astra can
+delegate longer intervals once the target has been identified. These
+examples show how the harness adjusts review intervals to different
+execution demands.</p>
+<p>Appendix <a href="#app:completion-time">E</a> reports completion
+times across the full benchmark. To examine the effect of review
+frequency more directly, we conduct a matched comparison on
+StopCube.</p>
 <h4 id="matched-review-policy-comparison" class="paragraph-heading">Matched review-policy comparison.</h4>
-<p>Delegation reduces completion time on the nine StopCube seeds that
+<p>Delegation reduces completion time on all nine StopCube seeds that
 succeed under both review policies (Table <a href="#tab:paired">3</a>).
-Mean execution time falls from 513.2 to 285.6 s, a reduction of 44.3%,
-and delegation is faster in all nine pairs. Across all ten seeds, the
-two conditions execute similar numbers of control steps, while
-delegation automatically continues 57.6% of execution requests and
-reduces total input tokens by 60.7%. Per-chunk review succeeds on 10/10
-seeds and delegation on 9/10. This comparison shows that delegation can
-substantially reduce execution time and token usage, although it fails
-on one seed completed successfully by per-chunk review.</p>
+Mean completion time falls from 513.2 to 285.6 s, a reduction of 44.3%.
+Across all ten seeds, both policies execute similar numbers of control
+steps, but delegation automatically continues 57.6% of execution
+requests and reduces total input tokens by 60.7%. Per-chunk review
+succeeds on 10/10 seeds, compared with 9/10 for delegation. These
+results show that delegation can substantially reduce inference overhead
+and completion time, with one additional failure in this matched
+comparison.</p>
 <div class="publication-panel table-panel">
 <div class="caption">
 <p><strong>Table 3.</strong> StopCube review-policy comparison on ten
 matched seeds with experience updates disabled. Timing uses successful
-episodes; the paired row uses the nine seeds successful in both
-conditions. Token counts include cached input and cover execution across
-all ten episodes.</p>
+episodes; the paired row uses the nine seeds successful under both
+policies. Token counts include cached input and cover all ten
+episodes.</p>
 </div>
 <span class="reference-anchor" id="tab:paired"></span>
 <div class="table-scroll" tabindex="0" role="region" aria-label="Scrollable report table">
@@ -610,25 +631,24 @@ all ten episodes.</p>
 <p>Across the evaluation, Astra updates the experience store after 37
 episodes, producing 43 entries, including seven revisions of earlier
 advice. Later execution decisions explicitly cite 38 of these entries
-across 468 episodes. The cases below show how this reused experience
-changes review intervals and target interpretation, helping Astra adapt
-its supervision to the VLA’s observed behavior.</p>
+across 468 episodes. The following cases trace how experience is revised
+and subsequently used to adjust supervision and task interpretation.</p>
 <h4 id="revising-execution-advice" class="paragraph-heading">Revising execution advice.</h4>
 <p>In PickXtimes, Astra observes hovering during button pressing and
-subsequently adds a stationary-motion monitor to the recommended 90-step
-budget. In the next episode, execution again reaches the 90-step budget
-without triggering the monitor. The recorded motion never satisfies the
-2 mm stationary threshold over a 32-step window: the smallest position
-diameter is 26.9 mm. Astra revises the advice to 60 initial steps, with
-review intervals of at most 16 steps during contact or recovery. In the
-following episode, Astra explicitly cites the revision and sets a
-60-step budget with the stationary-motion monitor enabled. The VLA
-executes four chunks of 16, 16, 16, and 12 steps before budget
-exhaustion; Astra then permits another action chunk, which completes the
-task after 13 steps. Figure <a href="#fig:trace">4</a> illustrates this
-revision and subsequent execution. The revised advice brings visual
-review forward while retaining stationary-motion monitoring as another
-way to trigger review.</p>
+adds a stationary-motion monitor to the recommended 90-step budget. In
+the next episode, execution again reaches the 90-step limit without
+triggering the monitor. The recorded motion never meets the stationary
+condition of a 2 mm threshold over a 32-step window; the smallest
+position diameter is 26.9 mm. Astra therefore revises the recommendation
+to an initial budget of 60 steps, with review intervals capped at 16
+steps during contact or recovery.</p>
+<p>In the following episode, Astra explicitly cites the revised advice
+and assigns a 60-step budget with the stationary-motion monitor enabled.
+The VLA executes four chunks of 16, 16, 16, and 12 steps before the
+budget expires. Astra then permits another chunk, and the task completes
+after 13 more steps. Figure <a href="#fig:trace">4</a> traces this
+progression. The revision brings visual review earlier without removing
+the stationary-motion monitor.</p>
 <div class="publication-panel figure-panel">
 <div class="case-frame">
 <a class="zoom-image" href="../assets/images/PickXtimes-ep0-f689-front.png" data-zoom aria-label="Enlarge PickXtimes ep0 f689 front"><img src="../assets/images/PickXtimes-ep0-f689-front.png" loading="lazy" alt="PickXtimes ep0 f689 front"></a>
@@ -648,8 +668,8 @@ way to trigger review.</p>
 <div class="caption">
 <p><strong>Figure 4.</strong> Experience revision across three
 PickXtimes episodes. Hovering motivates adding a stationary-motion
-monitor; continued motion prevents it from triggering in episode 1.
-Astra then shortens the budget from 90 to 60 steps and adopts this
+monitor, but continued motion prevents it from triggering in episode 1.
+Astra then shortens the budget from 90 to 60 steps and applies this
 advice in episode 2. Figure <a href="#fig:within-episode-cases">6</a>(a)
 follows episode 2 from review to completion.</p>
 </div>
@@ -657,18 +677,18 @@ follows episode 2 from review to completion.</p>
 </div>
 <h4 id="revising-historical-interpretation" class="paragraph-heading">Revising historical interpretation.</h4>
 <p>In VideoPlaceButton, a failed episode leads to advice for tracking
-visually similar rings through late demonstration swaps, but the
-resulting recommendation incorrectly assumes a before-press query. In
-the next episode, the task asks for the first event after the press;
-Astra recognizes that the earlier rule does not apply and subsequently
-revises it to condition on the current temporal query. A later episode
-asks for the last event before the press. Astra explicitly cites the
-revision in its notes and execution decision, examines the relevant
-historical frames, and selects the topmost ring. With an 80-step budget,
-the VLA completes the task after 54 steps. The revision preserves the
-identity-tracking advice while making target selection conditional on
-the requested temporal relation (Figure <a
-href="#fig:history-case">5</a>).</p>
+visually similar rings through late demonstration swaps. However, the
+initial recommendation assumes a before-press query. In the next
+episode, the task asks for the first event after the press. Astra
+recognizes that the earlier rule does not apply and revises it to
+account for the temporal relation specified by the task.</p>
+<p>A later episode asks for the last event before the press. Astra
+explicitly cites the revised rule in its notes and execution decision,
+inspects the relevant historical frames, and selects the topmost ring.
+The VLA completes the task in 54 steps under an 80-step budget. The
+revised experience retains the ring-tracking strategy while making
+target selection conditional on the requested temporal relation
+(Figure <a href="#fig:history-case">5</a>).</p>
 <div class="publication-panel figure-panel">
 <div class="case-frame">
 <a class="zoom-image" href="../assets/images/VideoPlaceButton-ep3-f700-front.png" data-zoom aria-label="Enlarge VideoPlaceButton ep3 f700 front"><img src="../assets/images/VideoPlaceButton-ep3-f700-front.png" loading="lazy" alt="VideoPlaceButton ep3 f700 front"></a>
@@ -687,7 +707,7 @@ href="#fig:history-case">5</a>).</p>
 </div>
 <div class="caption">
 <p><strong>Figure 5.</strong> Experience revision across three
-VideoPlaceButton episodes. The first rule tracks ring identity but
+VideoPlaceButton episodes. The initial rule tracks ring identity but
 assumes a before-press query. A first-after query prompts a conditional
 revision, later applied to a last-before query. Figure <a
 href="#fig:within-episode-cases">6</a>(b) shows the late swap within
@@ -696,52 +716,48 @@ episode 3.</p>
 <span class="reference-anchor" id="fig:history-case"></span>
 </div>
 <h3 id="failure-analysis"><span class="section-number">5.4</span> Failure analysis</h3>
-<p>We manually inspect all 23 failed episodes and group their primary
-causes into historical interpretation (8), subgoal grounding (1),
-execution (9), and review or recovery (5).</p>
-<p>Specifically, historical interpretation accounts for all five
-VideoPlaceOrder failures and also affects VideoPlaceButton and
-InsertPeg. The RouteStick grounding error concerns the task’s left–right
-convention. Execution problems include insufficient endpoint motion in
-two SwingXtimes episodes and insufficient container lift in one
-VideoUnmaskSwap episode. Two ButtonUnmaskSwap episodes advance before
-the button action is complete, and the two StopCube failures involve
-early or missed button timing. Repeated alignment and contact recovery
-also leave some InsertPeg episodes unsuccessful. These cases identify
-where history interpretation, progress review, and local correction
-still need improvement; representative trajectories appear in Figure <a
-href="#fig:failures">7</a>, with further details in Appendix <a
-href="#app:failure-analysis">H</a>.</p>
+<p>We manually inspect all 23 failed episodes and classify their primary
+causes as historical interpretation (8), subgoal grounding (1),
+execution (9), or review and recovery (5).</p>
+<p>Historical interpretation accounts for all five VideoPlaceOrder
+failures and also affects VideoPlaceButton and InsertPeg. The RouteStick
+grounding failure involves the task’s left–right convention. Execution
+failures include insufficient endpoint motion in two SwingXtimes
+episodes and insufficient container lift in one VideoUnmaskSwap episode.
+In ButtonUnmaskSwap, two episodes advance before the button action is
+complete, while the two StopCube failures involve early or missed button
+timing. Repeated alignment and contact recovery also leave some
+InsertPeg episodes unsuccessful. Figure <a href="#fig:failures">7</a>
+shows representative trajectories, with additional details in
+Appendix <a href="#app:failure-analysis">H</a>.</p>
 <h2 id="discussion-and-limitations"><span class="section-number">6</span> Discussion and limitations</h2>
 <p>Despite high task success and less frequent Astra review, the harness
-has several limitations. On-demand history queries avoid including the
-entire observation history in every Astra reasoning context. Sparse
-sampling can nevertheless omit a brief event or a late target swap,
-leading Astra to choose the wrong subgoal. More targeted retrieval of
-historical observations could reduce these errors without requiring the
-entire history to be included in the context.</p>
+has several limitations. On-demand history queries avoid loading the
+full observation history into Astra’s context, but sparse sampling can
+miss brief events or late target swaps, causing Astra to select the
+wrong subgoal. More targeted history retrieval could help recover
+evidence of such events while keeping the context manageable.</p>
 <p>Experience revision allows Astra to correct advice after new
-outcomes, yet an incorrect recommendation can still influence subsequent
+outcomes, but an incorrect recommendation can still influence subsequent
 decisions before it is revised. The current store also has no explicit
-bound on the amount of accumulated advice. As the store grows, redundant
-or conflicting recommendations may increase context usage and make it
-harder to select appropriate advice. Retrieval and consolidation that
-retain useful distinctions while removing redundant advice are natural
-extensions.</p>
+limit on accumulated experience. As it grows, redundant or conflicting
+recommendations may increase context usage and make it harder to select
+appropriate advice. Future work could retrieve only relevant entries and
+consolidate redundant advice without losing task-specific
+distinctions.</p>
 <p>Reducing review frequency addresses only part of the execution
 overhead. Each Astra decision still requires remote model inference,
 introducing latency whenever execution pauses for supervisory review.
-Faster supervisory inference and more selective invocation remain
-important for approaching the responsiveness of a standalone VLA
-policy.</p>
+Faster supervisory inference and fewer unnecessary reviews could improve
+responsiveness.</p>
 <h2 id="conclusion"><span class="section-number">7</span> Conclusion</h2>
-<p>We present a self-evolving harness that uses execution experience to
-guide Astra’s supervision of a learned manipulation policy. Across 800
-episodes on all 16 RoboMME tasks, the system achieves 97.1% success,
-with 54.9% of control steps executed without additional Astra review.
-These results illustrate how accumulated execution experience can inform
-Astra’s review, task interpretation, and recovery decisions, while
-allowing the VLA to handle most low-level control.</p>
+<p>We presented a self-evolving harness in which Astra delegates
+execution to a VLA, supervises its progress, and revises experience
+across episodes. Across 800 episodes covering all 16 RoboMME tasks, the
+system achieves 97.1% success, with 54.9% of control steps executed
+without additional Astra review. By accumulating and revising
+experience, the harness adapts its subgoal selection, supervision, and
+recovery decisions while keeping the VLA weights fixed.</p>
 <h2 id="references">References</h2><div id="refs" class="references csl-bib-body" data-entry-spacing="1"
 role="list">
 <div id="ref-pi05" class="csl-entry" role="listitem">
@@ -772,7 +788,7 @@ href="https://arxiv.org/abs/2608.16885">https://arxiv.org/abs/2608.16885</a></di
 <div id="ref-astra-three-tier" class="csl-entry" role="listitem">
 <div class="csl-left-margin">3. </div><div class="csl-right-inline">B.
 Chen, H. Fang, and C. K. Liu. <span class="nocase">Can Astra Solve
-RoboMME without Breaking the Bank?</span> <a
+RoboMME without Breaking the Bank?</span> 2026. <a
 href="https://bingaochen.github.io/Astra-on-RoboMME/">https://bingaochen.github.io/Astra-on-RoboMME/</a></div>
 </div>
 <div id="ref-gpt-policy" class="csl-entry" role="listitem">
@@ -941,18 +957,20 @@ href="https://proceedings.mlr.press/v229/zitkovich23a.html">https://proceedings.
 
 <div class="appendix-divider" id="appendices">Appendices</div>
 <h2 id="app:configuration"><span class="section-number">A</span> Experimental settings</h2>
-<p>Table <a href="#tab:config">4</a> specifies the model, experience,
-and execution settings used in evaluation. We use the official GroundSG
-checkpoint trained on the RoboMME training split, and training
-demonstrations also provide the initial duration advice. During testing,
-experience updates follow the schedule in Section <a
-href="#sec:setup">4</a>. Global advice is shared across tasks, while all
-37 accepted updates during the formal evaluation are task-specific. Each
-episode uses a fixed version of the experience store.</p>
+<p>Table <a href="#tab:config">4</a> summarizes the models and execution
+settings. We use the official GroundSG checkpoint trained on the RoboMME
+training split, with initial subtask-duration advice derived from the
+same training demonstrations. Experience updates follow the schedule in
+Section <a href="#sec:setup">4</a>. Across the 800 evaluation episodes,
+the experience store was updated after 37 episodes, producing 43
+additions or revisions, including seven revisions of earlier advice.
+These autonomous updates were task-specific, while global guidance was
+shared across tasks. The experience store remains fixed within each
+episode.</p>
 <div class="publication-panel table-panel">
 <div class="caption">
-<p><strong>Table 4.</strong> Evaluation settings. Control limits apply
-to actual executed control steps, including interventions.</p>
+<p><strong>Table 4.</strong> Evaluation settings. Control limits count
+executed steps, including direct interventions.</p>
 </div>
 <span class="reference-anchor" id="tab:config"></span>
 <div class="table-scroll" tabindex="0" role="region" aria-label="Scrollable report table">
@@ -1024,25 +1042,28 @@ via remote API</td>
 </div>
 </div>
 <h3 id="robot-state-monitors" class="paragraph-heading">Robot-state monitors.</h3>
-<p>The measured gripper monitor detects a total finger-width change of
-at least 5 mm from the start of the execution interval, sustained for
-two measured samples in the same direction. The direction monitor checks
-predicted or measured displacement greater than 20 mm in a selected
-signed world-frame direction relative to the robot pose at the start of
-the execution interval. The stationary-motion monitor uses a position
-diameter of at most 2 mm and an orientation diameter of at most
+<p>The harness provides both predictive and reactive monitor triggers.
+Predictive triggers request review before a proposed action is executed,
+while reactive triggers respond to changes measured during execution.
+Astra chooses which triggers to activate for each execution interval. A
+predictive gripper monitor can stop execution before a gripper-command
+switch. A measured gripper-width monitor detects a total finger-width
+change of at least 5 mm from the start of the interval, sustained over
+two samples in the same direction. The direction monitor can trigger on
+either proposed or measured displacement greater than 20 mm along a
+selected signed world-frame direction relative to the robot pose at the
+start of the interval. The stationary-motion monitor checks for a
+position diameter of at most 2 mm and an orientation diameter of at most
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mn>2</mn><mo>∘</mo></msup><annotation encoding="application/x-tex">2^\circ</annotation></semantics></math>
-over 32 control steps. An impending gripper-command switch can also
-trigger review. Astra selects the active monitors for each execution
-interval. Budget exhaustion prompts review, and episode termination
-stops execution.</p>
+over 32 executed control steps. Budget exhaustion also prompts review
+unless the episode has already terminated.</p>
 <h2 id="app:task-results"><span class="section-number">B</span> Per-task performance and execution allocation</h2>
-<p>Table <a href="#tab:task-results">5</a> reports success and execution
-allocation for each task. Automatic continuation counts execution after
-the first chunk of an execution interval. The control fraction includes
+<p>Table <a href="#tab:task-results">5</a> reports success and automatic
+VLA continuation by task. Automatic continuation begins after the first
+chunk of an execution interval. The control-step fraction includes
 direct Astra interventions in its denominator. Each task contributes 50
-episodes, and pooled allocation fractions weight tasks by their executed
-chunk or control counts.</p>
+episodes. Pooled fractions are calculated from all executed chunks or
+control steps, rather than averaging task percentages.</p>
 <div class="publication-panel table-panel">
 <div class="caption">
 <p><strong>Table 5.</strong> Per-task results. SR: success rate; auto
@@ -1187,77 +1208,81 @@ control steps. All entries are percentages.</p>
 </div>
 <h2 id="app:interfaces"><span class="section-number">C</span> Interface and experience details</h2>
 <h3 id="observation-provenance" class="paragraph-heading">Observation provenance.</h3>
-<p>Image-delivery records distinguish the visual evidence included in
-each successful Astra request from observations available only through
-retrospective inspection of the full recording.</p>
+<p>We record which images were delivered to Astra in each successful
+request. These records distinguish evidence available to Astra during
+execution from frames examined retrospectively in the full recording, an
+important distinction when analyzing missed events or incorrect task
+interpretations.</p>
 <h3 id="grounding" class="paragraph-heading">Grounding.</h3>
 <p>For a front image of height
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>H</mi><annotation encoding="application/x-tex">H</annotation></semantics></math>
 and width
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>W</mi><annotation encoding="application/x-tex">W</annotation></semantics></math>,
-a normalized point
+we convert a normalized point
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mrow><mo stretchy="true" form="prefix">(</mo><msub><mi>y</mi><mi>n</mi></msub><mo>,</mo><msub><mi>x</mi><mi>n</mi></msub><mo stretchy="true" form="postfix">)</mo></mrow><mo>∈</mo><msup><mrow><mo stretchy="true" form="prefix">[</mo><mn>0</mn><mo>,</mo><mn>1000</mn><mo stretchy="true" form="postfix">]</mo></mrow><mn>2</mn></msup></mrow><annotation encoding="application/x-tex">(y_n,x_n)\in[0,1000]^2</annotation></semantics></math>
-is converted to</p>
+to pixel coordinates:</p>
 <div class="equation">
 <p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>y</mi><mo>=</mo><mo>min</mo><mrow><mo stretchy="true" form="prefix">(</mo><mo stretchy="false" form="prefix">⌊</mo><msub><mi>y</mi><mi>n</mi></msub><mi>H</mi><mi>/</mi><mn>1000</mn><mo stretchy="false" form="postfix">⌋</mo><mo>,</mo><mi>H</mi><mo>−</mo><mn>1</mn><mo stretchy="true" form="postfix">)</mo></mrow><mo>,</mo><mspace width="2.0em"></mspace><mi>x</mi><mo>=</mo><mo>min</mo><mrow><mo stretchy="true" form="prefix">(</mo><mo stretchy="false" form="prefix">⌊</mo><msub><mi>x</mi><mi>n</mi></msub><mi>W</mi><mi>/</mi><mn>1000</mn><mo stretchy="false" form="postfix">⌋</mo><mo>,</mo><mi>W</mi><mo>−</mo><mn>1</mn><mo stretchy="true" form="postfix">)</mo></mrow><mi>.</mi></mrow><annotation encoding="application/x-tex">y=\min(\lfloor y_nH/1000\rfloor,H-1),\qquad
  x=\min(\lfloor x_nW/1000\rfloor,W-1).</annotation></semantics></math></p>
 <span class="equation-number">(2)</span></div>
-<p>The pixel coordinates replace the instruction’s ordered point slots.
-Validation checks finite coordinate values, normalized bounds, the
-number of supplied points, and compatibility with the task’s templates
-and permitted attributes. Astra can inspect an overlay before setting
-the subgoal. The default sparse history query selects up to eight
-uniformly spaced frames, including interval endpoints.</p>
+<p>The converted coordinates fill the corresponding point slots in the
+grounded instruction. Validation checks that coordinates are finite and
+within bounds, that the expected number of points is provided, and that
+the attributes match the task template. Astra can inspect a visual
+overlay before selecting the subgoal. By default, a history query
+returns up to eight uniformly spaced frames, including the interval
+endpoints.</p>
 <h3 id="control-steps-and-duration-priors" class="paragraph-heading">Control steps and duration priors.</h3>
-<p>A control step is counted at the shared environment action interface,
-separately from simulator integration steps. At environment frequency
+<p>Control steps are counted at the environment action interface,
+independently of simulator integration steps. At
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>f</mi><mi>c</mi></msub><mo>=</mo><mn>20</mn><mspace width="0.167em"></mspace><mrow><mi mathvariant="normal">H</mi><mi mathvariant="normal">z</mi></mrow></mrow><annotation encoding="application/x-tex">f_c=20\,\mathrm{Hz}</annotation></semantics></math>,
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>n</mi><annotation encoding="application/x-tex">n</annotation></semantics></math>
-steps correspond nominally to
+control steps correspond nominally to
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>n</mi><mi>/</mi><msub><mi>f</mi><mi>c</mi></msub></mrow><annotation encoding="application/x-tex">n/f_c</annotation></semantics></math>
-seconds of simulated control. Inference and API waiting time contribute
-separately to elapsed time. Repeated training samples are deduplicated
-by task, episode, and timestep before consecutive identical subgoal
-labels are grouped. Segment lengths are estimated from timestep
-differences. For lengths
+seconds of simulated control; inference and API waiting contribute to
+wall-clock time separately. To estimate subtask durations, we
+deduplicate training samples by task, episode, and timestep, then group
+consecutive samples with the same subgoal label. We estimate segment
+lengths from timestep differences. For the duration distribution
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>D</mi><mi>s</mi></msub><annotation encoding="application/x-tex">D_s</annotation></semantics></math>
-associated with subgoal
+of subgoal
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>s</mi><annotation encoding="application/x-tex">s</annotation></semantics></math>,
-the initial recommendation is</p>
+the initial budget recommendation is</p>
 <div class="equation">
 <p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mover><mi>B</mi><mo accent="true">̂</mo></mover><mi>s</mi></msub><mo>=</mo><mo>min</mo><mspace width="-0.167em"></mspace><mrow><mo stretchy="true" form="prefix">(</mo><mn>200</mn><mo>,</mo><mn>10</mn><mrow><mo stretchy="true" form="prefix">⌊</mo><msub><mi>Q</mi><mn>0.25</mn></msub><mrow><mo stretchy="true" form="prefix">(</mo><msub><mi>D</mi><mi>s</mi></msub><mo stretchy="true" form="postfix">)</mo></mrow><mi>/</mi><mn>10</mn><mo stretchy="true" form="postfix">⌋</mo></mrow><mo stretchy="true" form="postfix">)</mo></mrow><mi>.</mi></mrow><annotation encoding="application/x-tex">\widehat B_s=\min\!\left(200,10\left\lfloor Q_{0.25}(D_s)/10\right\rfloor\right).</annotation></semantics></math></p>
 <span class="equation-number">(3)</span></div>
-<p>Recommendations below 30 control steps become advice for close
-review. Because sampled annotations may miss short segments or include
-trailing frames in terminal segments, these duration estimates serve as
-initial guidance rather than exact subtask boundaries.</p>
+<p>Recommendations below 30 steps are treated as advice for close review
+rather than as delegation budgets. Sampled annotations may miss short
+segments or include trailing frames in terminal segments, so these
+estimates are initial guidance rather than exact subtask boundaries.</p>
 <h3 id="experience-validation-and-applicability" class="paragraph-heading">Experience validation and applicability.</h3>
-<p>Submission checks cover required fields, permitted scope and
-applicability labels, cited frame indices, and the existence of
-superseded identifiers. Scheduling advice is also checked for
-compatibility with subgoal templates and valid monitor parameters.
-Experience entries are marked as either policy-independent or specific
-to a review policy. When retrieving advice, the harness first selects
-entries applicable to the current policy and then resolves superseded
-recommendations. The optional scheduling field
-<code>max_trust_steps</code> records a recommended review interval; the
-configured execution maximum remains the enforced limit.</p>
+<p>Experience submissions are checked for required fields, applicable
+task scope and conditions, supporting frame indices, and identifiers of
+superseded entries. Scheduling recommendations must also use compatible
+subgoal templates and valid monitor parameters. During retrieval, the
+harness resolves superseded recommendations. The optional field
+<code>max_trust_steps</code> records a recommended review interval,
+while the configured execution maximum remains a hard limit.</p>
 <h2 id="app:measurements"><span class="section-number">D</span> Measurement definitions</h2>
 <p>Success rate is the number of officially successful episodes divided
-by the evaluated count. Equal task sizes make overall success equal to
-the mean task success rate. Execution-time summaries include only the
-777 successful episodes; token totals include all 800 episodes. API
-attempts and elapsed time include failed requests. Token statistics
-report coverage of returned usage; cached input is a subset of total
-input, and missing usage remains unknown. Execution and post-episode
-revision token totals are reported separately. API latency for revision
-is not a measurement of the complete revision wall time.</p>
-<p>Automatic continuation counts VLA chunks executed after the first
-chunk of an execution interval. The all-chunk fraction divides these by
-all executed VLA chunks. The automatic-control fraction divides control
-steps in continuation chunks by all executed control steps, including
-direct interventions. Fractions use pooled counts across episodes rather
-than averages of episode percentages.</p>
+by the number evaluated. Since each task has 50 episodes, overall
+success also equals the mean of the per-task success rates.
+Completion-time statistics include only the 777 successful episodes,
+while token totals cover all 800. Elapsed time includes failed API
+attempts. Token usage is recorded when returned by the API; cached input
+is a subset of total input, and usage missing from failed requests
+remains unknown. Execution and post-episode review tokens are reported
+separately. API latency alone does not measure the full duration of
+post-episode review.</p>
+<p>The first VLA chunk of a new subgoal is counted as <em>subgoal
+entry</em>. The first VLA chunk released after Astra reviews an existing
+subgoal is counted as <em>VLA continuation after review</em>. Later
+chunks executed within the same budget are <em>automatic VLA
+continuation</em>. The automatic-chunk fraction divides automatic chunks
+by all executed VLA chunks. The automatic-control fraction divides steps
+in automatic chunks by all executed control steps, including direct
+interventions. Both fractions use pooled counts, not averages of
+episode-level percentages.</p>
 <div class="publication-panel table-panel">
 <div class="caption">
 <p><strong>Table 6.</strong> Execution allocation across all 800
@@ -1318,20 +1343,18 @@ lengths from VLA chunks. Percentages use pooled counts.</p>
 </div>
 </div>
 <h2 id="app:completion-time"><span class="section-number">E</span> Successful-episode execution time</h2>
-<p>Execution time runs from environment readiness to the end of robot
-execution, excluding startup and post-episode review. The pooled row
-summarizes all 777 successful episodes, rather than averaging task
-means. P90 uses linear interpolation between ordered observations.</p>
-<h3 id="interpretation-of-completion-times" class="paragraph-heading">Interpretation of completion times.</h3>
-<p>Across 777 successful episodes, mean completion time is 513.7
-seconds, the median is 390.5 seconds, and the 90th percentile is 1,102.0
-seconds. Task means range from 141.2 seconds on VideoUnmask to 991.8
-seconds on ButtonUnmaskSwap. These measurements include model inference,
-history queries, action execution, and waiting; API load and network
-conditions also affect them. These full-benchmark timing results are
-descriptive and are not intended as controlled efficiency comparisons
-with published systems. The matched StopCube experiment provides a
-controlled comparison of review policies.</p>
+<p>Completion time runs from environment readiness to the end of robot
+execution, excluding startup and post-episode review. It includes model
+inference, history queries, action execution, and waiting. The pooled
+statistics use all 777 successful episodes rather than averages of task
+means; P90 uses linear interpolation between ordered observations.</p>
+<p>Mean completion time is 513.7 seconds, with a median of 390.5 seconds
+and a 90th percentile of 1,102.0 seconds. Task means range from 141.2
+seconds for VideoUnmask to 991.8 seconds for ButtonUnmaskSwap. These
+full-benchmark timing results are descriptive, not controlled efficiency
+comparisons with published systems. API load and network conditions also
+affect elapsed time. The matched StopCube experiment instead compares
+review policies under controlled conditions.</p>
 <div class="publication-panel table-panel">
 <div class="caption">
 <p><strong>Table 7.</strong> Completion times for successful episodes.
@@ -1473,12 +1496,12 @@ All times are seconds.</p>
 </div>
 </div>
 <h2 id="monitor-selection-and-resource-use"><span class="section-number">F</span> Monitor selection and resource use</h2>
-<p>Monitor selection is counted once per execution interval, across
-3,541 intervals. Several monitors may be selected together, so selection
-shares need not sum to 100%. No optional monitor is selected in 1,840
-intervals (51.96%); budgets and mandatory termination conditions still
-apply. Trigger frequency counts intervals ending with a detected
-condition and does not measure error-detection accuracy.</p>
+<p>Monitor selection is measured across 3,541 execution intervals.
+Multiple monitors can be active in the same interval, so their selection
+shares do not sum to 100%. No optional monitor is selected in 1,840
+intervals (51.96%), although budget limits and mandatory termination
+checks still apply. Trigger frequency records intervals that end with a
+monitor condition; it is not a measure of error-detection accuracy.</p>
 <div class="publication-panel table-panel">
 <div class="caption">
 <p><strong>Table 8.</strong> Monitor selection and subsequent
@@ -1524,13 +1547,15 @@ comes from measured directional displacement.</p>
 </table>
 </div>
 </div>
-<p>Selection differs by task stage. On StopCube, all 51
-button-preparation intervals omit optional monitors, whereas 56 of 85
-stationary-waiting intervals select a direction monitor. On SwingXtimes,
-a pre-command gripper monitor is selected in 186 of 193 target-movement
-intervals (96.37%), compared with 22 of 93 grasping intervals (23.66%).
-On PickXtimes, the stationary-motion monitor is selected in 49 of 50
-button-stop intervals, yet it never triggers across the evaluation.</p>
+<p>Monitor choices vary with task stage. On StopCube, none of the 51
+button-preparation intervals uses an optional monitor, while 56 of 85
+stationary-waiting intervals use a direction monitor. On SwingXtimes,
+the pre-command gripper monitor is selected in 186 of 193
+target-movement intervals (96.37%), compared with 22 of 93 grasping
+intervals (23.66%). On PickXtimes, the stationary-motion monitor is
+selected in 49 of 50 button-stop intervals but never triggers. Across
+the full evaluation, all 28 direction-monitor triggers come from
+predicted motion rather than measured displacement.</p>
 <div class="publication-panel table-panel">
 <div class="caption">
 <p><strong>Table 9.</strong> Mean recorded token usage per evaluated
@@ -1570,16 +1595,16 @@ episode, over all 800 episodes. Cached input is a subset of input.</p>
 </table>
 </div>
 </div>
-<p>All 19,061 successful API responses include usage records, while 112
-failed attempts have unknown usage, giving 99.4% coverage. Reported
-per-episode means use recorded usage divided by all 800 episodes and may
-underestimate actual token consumption. They should not be interpreted
-as billing estimates.</p>
+<p>Usage records are available for all 19,061 successful API responses.
+The 112 failed attempts have unknown usage, giving 99.4% coverage by
+request count. Per-episode means divide recorded usage by 800 episodes
+and may underestimate total token consumption. These values are not
+billing estimates.</p>
 <h2 id="app:case-sequences"><span class="section-number">G</span> Within-episode case sequences</h2>
-<p>Figure <a href="#fig:within-episode-cases">6</a> expands the
-cross-episode examples in Figures <a href="#fig:trace">4</a> and <a
-href="#fig:history-case">5</a> with two frames from the same episode in
-each pair.</p>
+<p>Figure <a href="#fig:within-episode-cases">6</a> adds within-episode
+evidence to the experience-revision cases in Figures <a
+href="#fig:trace">4</a> and <a href="#fig:history-case">5</a>, with two
+frames from the same episode in each pair.</p>
 <div class="publication-panel figure-panel">
 <div class="mini-panel">
 <p>(a) PickXtimes / episode 2</p>
@@ -1617,33 +1642,36 @@ success</p>
 <p>Both frames inspected after failure</p>
 </div>
 <div class="caption">
-<p><strong>Figure 6.</strong> Two within-episode sequences, read left to
-right within each pair. (a) Astra reviews execution after the revised
-60-step budget and permits another chunk; official feedback reports
-success after 13 further steps. (b) Historical frames show the late ring
-permutation examined during post-episode review. The pairs document
-execution and historical evidence, respectively.</p>
+<p><strong>Figure 6.</strong> Within-episode evidence for two
+experience-revision cases. (a) After the revised 60-step budget expires,
+Astra reviews the scene and permits another chunk; the task succeeds
+after 13 additional steps. (b) Frames before and after the late ring
+swap, both inspected during post-episode review.</p>
 </div>
 <span class="reference-anchor" id="fig:within-episode-cases"></span>
 </div>
 <h2 id="app:failure-analysis"><span class="section-number">H</span> Failure annotation and reference-frame clarification</h2>
-<p>Manual inspection of the 23 unsuccessful episodes assigns one primary
-label per episode: historical interpretation (8), subgoal grounding (1),
-execution (9), or review and recovery (5). The execution category
-includes two SwingXtimes episodes in which the motion does not fully
-reach the target and one VideoUnmaskSwap episode with insufficient
-container lift. Each episode is counted once according to its primary
-failure mode.</p>
+<p>We manually assign one primary cause to each of the 23 failed
+episodes: historical interpretation (8), subgoal grounding (1),
+execution (9), or review and recovery (5). The execution group includes
+two SwingXtimes episodes in which the motion falls short of the target
+and one VideoUnmaskSwap episode with insufficient container lift.</p>
 <p>In the first RouteStick episode, Astra misinterprets the task’s
-left–right convention, leading to an incorrect directional subgoal. As
-RoboMME’s directional instructions do not explicitly specify the
-reference frame, we subsequently added a clarification of this
-convention to the agent’s global experience context: task directions
-refer to the initial wrist view or initial robot orientation, rather
-than the changing wrist orientation or the front-view screen axes. Image
-points retain the pixel coordinates of their own camera. This interface
-clarification is not counted among the 37 autonomous experience
-updates.</p>
+left–right convention and selects an incorrect directional subgoal.
+RoboMME’s task instructions do not explicitly specify the reference
+frame for left and right. We therefore added a clarification that task
+directions refer to the initial wrist view or initial robot orientation,
+rather than the changing wrist orientation or the front-image axes. We
+placed this note in the global experience context, although it could
+equally have been included in the system prompt. It clarifies the task
+interface rather than providing privileged scene information, and it is
+excluded from the 43 recorded experience additions and revisions. The
+published direct-Astra study similarly specifies a left–right convention
+in its shared prompt and reports that an earlier run without it failed
+all 50 SwingXtimes episodes <span class="citation"
+data-cites="astra-direct">[<a href="#ref-astra-direct"
+role="doc-biblioref">12</a>]</span>. Grounding points still use pixel
+coordinates from their respective camera views.</p>
 <div class="publication-panel figure-panel">
 <p>(a) VideoPlaceOrder / episode 11</p>
 <div class="case-frame">
@@ -1694,30 +1722,31 @@ updates.</p>
 <p>Episode ends without completion</p>
 </div>
 <div class="caption">
-<p><strong>Figure 7.</strong> Representative failures, read left to
-right within each episode. (a) VideoPlaceOrder loses target identity
-through a late ring swap; frame 740 was inspected retrospectively. (b)
-ButtonUnmaskSwap moves to container manipulation too early and later
-retries the button. (c) InsertPeg remains incomplete after repeated
-alignment and contact recovery.</p>
+<p><strong>Figure 7.</strong> Representative failed episodes, shown in
+temporal order. (a) VideoPlaceOrder loses track of the target after a
+late ring swap; frame 740 was inspected retrospectively. (b)
+ButtonUnmaskSwap moves to container manipulation before completing the
+button action, then retries. (c) InsertPeg remains incomplete despite
+repeated alignment and recovery attempts.</p>
 </div>
 <span class="reference-anchor" id="fig:failures"></span>
 </div>
 <h2 id="app:paired"><span class="section-number">I</span> Review-policy comparison</h2>
-<p>The StopCube comparison uses ten official test seeds, with both
-policies rerun under the same harness configuration. The two conditions
-receive identical saved versions of the experience store within each
-pair. Experience updates are disabled to keep the comparison focused on
-review policy. Runs alternate which policy executes first.</p>
-<p>Delegation is faster on all nine jointly successful seeds, saving a
-mean of 227.6 seconds. The first per-chunk run includes 35.5 seconds of
-VLA inference, compared with 2.3 seconds for its delegated counterpart.
-Excluding this pair leaves eight joint successes with mean times of
-491.9 and 280.6 seconds, respectively, a 43.0% reduction. Across all ten
-runs, execution uses 2,021 control steps with per-chunk review and 2,010
-with delegation. Input-token totals fall from 30.63 to 12.05 million;
-uncached input falls from 2.22 to 1.19 million, and output from 32,222
-to 21,333 tokens.</p>
+<p>We compare review policies on ten official StopCube test seeds using
+the same harness configuration. For each matched seed, both policies
+receive identical experience input. Experience updates are disabled
+throughout the comparison, and the order of the two policies alternates
+across pairs.</p>
+<p>Delegation is faster on all nine seeds successful under both
+policies, saving 227.6 seconds on average. In the first pair, VLA
+inference takes 35.5 seconds with per-chunk review but only 2.3 seconds
+with delegation. To check whether this difference drives the result, we
+exclude that pair. Across the remaining eight joint successes, mean
+completion times are 491.9 and 280.6 seconds, a 43.0% reduction. Across
+all ten seeds, per-chunk review executes 2,021 control steps versus
+2,010 with delegation. Total input tokens decrease from 30.63 to 12.05
+million, uncached input from 2.22 to 1.19 million, and output from
+32,222 to 21,333 tokens.</p>
 </main></div>
 <footer class="site-footer"><a href="../">Astra–VLA Harness</a><span>Memory-dependent manipulation · RoboMME</span><a href="#report-content">Back to top ↑</a></footer>
 <dialog class="image-dialog" aria-label="Expanded figure"><form method="dialog"><button aria-label="Close expanded figure">Close ×</button></form><img alt=""></dialog>

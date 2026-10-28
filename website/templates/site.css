@@ -70,3 +70,5 @@
 }
 
 @media(min-width:768px){.mechanism-top{padding:12px 24px}.comparison-narration{padding:18px 25px}.comparison-toolbar{margin-top:13px}.mechanism .track{padding:14px 24px}.lane-heading{margin-bottom:10px}.stage-card svg{height:85px}.stage-card{padding-bottom:7px}.lane-foot{margin-top:9px}.mechanism .feedback-flow{padding:13px 24px}.mechanism .feedback-node{padding:8px 11px}.mechanism .feedback-node.active{padding:7px 10px}}
+
+.publication-authors{margin:1.1rem 0;color:inherit;font-size:.95rem;line-height:1.6}.publication-authors p{margin:.25rem 0}.affiliation-logos{display:flex;align-items:center;gap:1.25rem;margin:.65rem 0}.affiliation-logos img:first-child{width:48px;height:48px;object-fit:contain}.affiliation-logos img:last-child{width:120px;height:48px;object-fit:contain;object-position:left center}

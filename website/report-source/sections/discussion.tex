@@ -1,10 +1,24 @@
 \FloatBarrier
 \section{Discussion and limitations}
-Despite high task success and less frequent Astra review, the harness has several limitations. On-demand history queries avoid including the entire observation history in every Astra reasoning context. Sparse sampling can nevertheless omit a brief event or a late target swap, leading Astra to choose the wrong subgoal. More targeted retrieval of historical observations could reduce these errors without requiring the entire history to be included in the context.
 
-Experience revision allows Astra to correct advice after new outcomes, yet an incorrect recommendation can still influence subsequent decisions before it is revised. The current store also has no explicit bound on the amount of accumulated advice. As the store grows, redundant or conflicting recommendations may increase context usage and make it harder to select appropriate advice. Retrieval and consolidation that retain useful distinctions while removing redundant advice are natural extensions.
+Despite high task success and less frequent Astra review, the harness has several limitations. On-demand history queries avoid loading the full observation history into Astra's context, but sparse sampling can miss brief events or late target swaps, causing Astra to select the wrong subgoal. More targeted history retrieval could help recover evidence of such events while keeping the context manageable.
 
-Reducing review frequency addresses only part of the execution overhead. Each Astra decision still requires remote model inference, introducing latency whenever execution pauses for supervisory review. Faster supervisory inference and more selective invocation remain important for approaching the responsiveness of a standalone VLA policy.
+Experience revision allows Astra to correct advice after new outcomes, but an incorrect recommendation can still influence subsequent decisions before it is revised. The current store also has no explicit limit on accumulated experience. As it grows, redundant or conflicting recommendations may increase context usage and make it harder to select appropriate advice. Future work could retrieve only relevant entries and consolidate redundant advice without losing task-specific distinctions.
+
+Reducing review frequency addresses only part of the execution overhead. Each Astra decision still requires remote model inference, introducing latency whenever execution pauses for supervisory review. Faster supervisory inference and fewer unnecessary reviews could improve responsiveness.
 
 \section{Conclusion}
-We present a self-evolving harness that uses execution experience to guide Astra's supervision of a learned manipulation policy. Across 800 episodes on all 16 RoboMME tasks, the system achieves 97.1\% success, with 54.9\% of control steps executed without additional Astra review. These results illustrate how accumulated execution experience can inform Astra's review, task interpretation, and recovery decisions, while allowing the VLA to handle most low-level control.
+
+We presented a self-evolving harness in which Astra delegates execution to a VLA, supervises its progress, and revises experience across episodes. Across 800 episodes covering all 16 RoboMME tasks, the system achieves 97.1\% success, with 54.9\% of control steps executed without additional Astra review. By accumulating and revising experience, the harness adapts its subgoal selection, supervision, and recovery decisions while keeping the VLA weights fixed.
+
+
+% \FloatBarrier
+% \section{Discussion and limitations}
+% Despite high task success and less frequent Astra review, the harness has several limitations. On-demand history queries avoid including the entire observation history in every Astra reasoning context. Sparse sampling can nevertheless omit a brief event or a late target swap, leading Astra to choose the wrong subgoal. More targeted retrieval of historical observations could reduce these errors without requiring the entire history to be included in the context.
+
+% Experience revision allows Astra to correct advice after new outcomes, yet an incorrect recommendation can still influence subsequent decisions before it is revised. The current store also has no explicit bound on the amount of accumulated advice. As the store grows, redundant or conflicting recommendations may increase context usage and make it harder to select appropriate advice. Retrieval and consolidation that retain useful distinctions while removing redundant advice are natural extensions.
+
+% Reducing review frequency addresses only part of the execution overhead. Each Astra decision still requires remote model inference, introducing latency whenever execution pauses for supervisory review. Faster supervisory inference and more selective invocation remain important for approaching the responsiveness of a standalone VLA policy.
+
+% \section{Conclusion}
+% We present a self-evolving harness that uses execution experience to guide Astra's supervision of a learned manipulation policy. Across 800 episodes on all 16 RoboMME tasks, the system achieves 97.1\% success, with 54.9\% of control steps executed without additional Astra review. These results illustrate how accumulated execution experience can inform Astra's review, task interpretation, and recovery decisions, while allowing the VLA to handle most low-level control.

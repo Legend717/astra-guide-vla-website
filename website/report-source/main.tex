@@ -11,10 +11,15 @@
 \usepackage{hyperref}
 \definecolor{ink}{HTML}{183344}
 \definecolor{teal}{HTML}{217C80}
+\definecolor{draft}{HTML}{995724}
 \hypersetup{colorlinks=true,linkcolor=ink,citecolor=teal,urlcolor=teal,pdftitle={Can Astra Guide a VLA to Solve RoboMME? A Self-Evolving Harness for Memory-Dependent Manipulation}}
 \graphicspath{{figures/}}
+\newcommand{\resultblank}{\textcolor{draft}{\rule{1.5em}{0.35pt}}}
+\newcommand{\metric}[1]{{\color{draft}\textnormal{[#1]}}}
+% References verified against official publication or author sources.
 \newcommand{\citepending}[1]{\citep{#1}}
 \newcommand{\pifive}{\ensuremath{\pi_{0.5}}}
+\newcommand{\role}[1]{} % Editorial paragraph roles remain outside reader-facing prose.
 % Compact case panels: keep labels readable while reducing image area.
 \newenvironment{casefigure}{%
   \par\addvspace{\intextsep}\noindent\begin{minipage}{\linewidth}
@@ -28,12 +33,15 @@
 \setlength{\emergencystretch}{2em}
 \title{Can Astra Guide a VLA to Solve RoboMME?\\[3pt]
 \large A Self-Evolving Harness for Memory-Dependent Manipulation}
-\author{}
+\author{Xingping Chen$^{1}$ \quad Zihao Mo$^{1}$ \quad Yimin Chen$^{2}$ \\
+Zhanghui Kuang$^{2}$ \quad Guanbin Li$^{1,*}$ \\[4pt]
+\small $^{1}$Sun Yat-sen University \quad $^{2}$TengenX \\
+\small $^{*}$Corresponding author}
 \date{Technical report}
 \begin{document}
 \maketitle
 \begin{abstract}
-Robot manipulation often requires information from past observations to guide current actions. We present a self-evolving harness that combines GPT-6 Astra with the official RoboMME GroundSG vision-language-action model (VLA) for memory-dependent manipulation. Astra interprets task history and selects subgoals, while the VLA handles their execution. To reduce repeated supervision, Astra chooses how many control steps the VLA may execute before review and can select robot-state monitors that prompt earlier inspection. It also intervenes directly when execution requires correction. Starting from subtask-duration priors, the harness accumulates and revises experience across episodes. This experience informs when Astra can rely on the VLA and when closer supervision is needed, while VLA weights remain fixed. Across 800 test episodes covering all 16 RoboMME tasks, the system achieves 97.1\% success, with 54.9\% of control steps executed without additional Astra review. These results show that high task success can coexist with less frequent supervision, supporting experience-guided coordination as a practical way to combine VLM reasoning with learned robot control.
+Robot manipulation often requires information from past observations to guide current actions. We present a self-evolving harness that combines GPT-6 Astra with the official RoboMME GroundSG vision-language-action model (VLA) for memory-dependent manipulation. Astra reasons over task history to determine subgoals and delegates their execution to the VLA. To balance execution autonomy with supervision, Astra assigns execution budgets that specify the maximum number of control steps before the next review, selects robot-state monitors that can trigger earlier review, and directly intervenes when corrective control is needed. Starting from subtask-duration priors, the harness accumulates and revises experience across episodes, progressively informing supervision decisions without updating the VLA weights. Across 800 evaluation episodes spanning all 16 RoboMME tasks, our harness achieves 97.1\% success, with 54.9\% of control steps executed without additional Astra review. These results demonstrate that high task success can coexist with reduced supervision frequency, highlighting the potential of experience-guided coordination between high-level reasoning and low-level robot control.
 \end{abstract}
 \begin{figure}[!t]
 \centering
